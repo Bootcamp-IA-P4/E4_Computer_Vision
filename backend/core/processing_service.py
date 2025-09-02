@@ -78,7 +78,7 @@ class ProcessingService:
                         frame_capture_path, SUPABASE_IMAGES_BUCKET, frame_storage_path
                     )
                     
-                    # Insert frame capture record
+                    # Insert frame capture record (using actual frame_captures structure)
                     frame_capture_data = {
                         'file_id': file_id,
                         'frame_number': frame_idx,
@@ -86,7 +86,8 @@ class ProcessingService:
                         'path': frame_storage_path,
                         'public_url': frame_url,
                         't_start': t_start,
-                        't_end': t_end
+                        't_end': t_end,
+                        'detections_count': len(detections)
                     }
                     frame_capture_id = await supabase_client.insert_frame_capture(frame_capture_data)
                 
@@ -107,7 +108,7 @@ class ProcessingService:
                     # Get or create brand
                     brand_id = await supabase_client.get_or_create_brand(detection['class_name'])
                     
-                    # Prepare detection data
+                    # Prepare detection data (removing frame_capture_id as it's not in the schema)
                     detection_data = {
                         'file_id': file_id,
                         'brand_id': brand_id,
@@ -116,8 +117,7 @@ class ProcessingService:
                         't_start': t_start,
                         't_end': t_end,
                         'frame': frame_idx,
-                        'model': 'yolov8',
-                        'frame_capture_id': frame_capture_id  # Link to frame capture
+                        'model': 'yolov8'
                     }
                     
                     # Insert detection
@@ -136,7 +136,9 @@ class ProcessingService:
             prediction_ids = []
             for brand_name, stats in brand_stats.items():
                 brand_id = await supabase_client.get_or_create_brand(brand_name)
-                prediction_data = stats_calculator.prepare_prediction_data(stats, brand_id, file_id)
+                prediction_data = stats_calculator.prepare_prediction_data(
+                    stats, brand_id, file_id, video_info['duration_seconds']
+                )
                 prediction_id = await supabase_client.insert_prediction(prediction_data)
                 prediction_ids.append(prediction_id)
             
@@ -200,15 +202,13 @@ class ProcessingService:
                     frame_capture_path, SUPABASE_IMAGES_BUCKET, frame_storage_path
                 )
                 
-                # Insert frame capture record
+                # Insert frame capture record (for images)
                 frame_capture_data = {
                     'file_id': file_id,
                     'frame_number': 0,  # Single image, frame 0
-                    'bucket': SUPABASE_IMAGES_BUCKET,
-                    'path': frame_storage_path,
-                    'public_url': frame_url,
-                    't_start': 0.0,
-                    't_end': 0.0
+                    'timestamp_seconds': 0.0,
+                    'frame_url': frame_url,
+                    'detections_count': len(detections)
                 }
                 frame_capture_id = await supabase_client.insert_frame_capture(frame_capture_data)
                 
@@ -232,15 +232,14 @@ class ProcessingService:
                 # Get or create brand
                 brand_id = await supabase_client.get_or_create_brand(detection['class_name'])
                 
-                # Prepare detection data
+                # Prepare detection data (removing frame_capture_id as it's not in the schema)
                 detection_data = {
                     'file_id': file_id,
                     'brand_id': brand_id,
                     'score': detection['confidence'],
                     'bbox': detection['bbox'],
                     'frame': 0,
-                    'model': 'yolov8',
-                    'frame_capture_id': frame_capture_id  # Link to frame capture
+                    'model': 'yolov8'
                 }
                 
                 # Insert detection
