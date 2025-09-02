@@ -1,0 +1,28 @@
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de entorno
+.env
+*.env
+
+# Modelos grandes
+*.pt
+*.pth
+
+# Directorios temporales
+temp/
+uploads/
+frames/
+crops/
+
+# Entornos virtuales
+venv/
+.env/
+.venv/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
