@@ -6,7 +6,11 @@ Incluye seguimiento del procesamiento y obtención del file_id
 import requests
 import time
 import os
+import sys
 from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 API_BASE_URL = "http://localhost:8000"
 

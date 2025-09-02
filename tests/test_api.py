@@ -6,6 +6,9 @@ import time
 from pathlib import Path
 import urllib.request
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Configuración
 API_BASE_URL = "http://localhost:8000"
 

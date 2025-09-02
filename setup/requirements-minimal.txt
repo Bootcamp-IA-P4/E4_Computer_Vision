@@ -1,0 +1,34 @@
+# Minimal requirements for compatibility issues
+# Use this file if regular requirements.txt fails
+
+# Core FastAPI dependencies
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+
+# Supabase dependencies
+supabase
+httpx
+
+# Machine Learning dependencies - CPU only for compatibility
+ultralytics
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+numpy<2.0.0
+opencv-python
+
+# Utility dependencies
+requests
+pillow
+tqdm
+PyYAML
+aiofiles
+psycopg2-binary
+sqlalchemy
+
+# Websockets for Supabase realtime
+websockets
+
+# Optional: for better logging and monitoring
+psutil

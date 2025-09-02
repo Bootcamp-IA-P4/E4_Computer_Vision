@@ -14,18 +14,14 @@ cd FactoriaF5API
 
 **Windows:**
 ```cmd
-cd setup
-setup.bat
+setup\setup.bat
 ```
 
 **Linux/Mac:**
 ```bash
-cd setup
-chmod +x setup.sh
-./setup.sh
+chmod +x setup/setup.sh
+./setup/setup.sh
 ```
-
-> **⚠️ Importante**: Los scripts deben ejecutarse desde dentro de la carpeta `setup/`
 
 ### 3. Configurar Variables de Entorno
 1. Edita el archivo `.env` creado automáticamente
@@ -33,25 +29,27 @@ chmod +x setup.sh
 ```env
 SUPABASE_URL=tu_url_de_supabase
 SUPABASE_SERVICE_ROLE=tu_clave_de_service_role
-SUPABASE_KEY=tu_key
 ```
 
-### 4. Ejecutar el Servidor
+### 4. Configurar Base de Datos
+1. Ve a tu proyecto en Supabase
+2. Ejecuta el script `setup/database_schema.sql` en el SQL Editor
+3. Crea los buckets de almacenamiento:
+   - `images` (para imágenes y crops)
+   - `videos` (para archivos de video)
+
+### 5. Ejecutar el Servidor
 
 **Windows:**
 ```cmd
-cd setup
-run.bat
+setup\run.bat
 ```
 
 **Linux/Mac:**
 ```bash
-cd setup
-chmod +x run.sh
-./run.sh
+chmod +x setup/run.sh
+./setup/run.sh
 ```
-
-> **📝 Nota sobre el modelo YOLO**: El proyecto incluye un modelo personalizado `best.pt`. Si no aparece en tu copia clonada, el sistema usará automáticamente el modelo YOLOv8n por defecto.
 
 ## 📋 Instalación Manual
 
@@ -85,8 +83,6 @@ mkdir -p temp/uploads temp/frames temp/crops
 # 6. Ejecutar servidor
 python main.py
 ```
-
-> **💡 Tip**: Para automatizar este proceso, usa los scripts en la carpeta `setup/`
 
 ## 🏗️ Estructura del Proyecto
 
@@ -282,157 +278,6 @@ python -m pytest tests/
 - [ ] Autenticación y autorización
 - [ ] Rate limiting
 - [ ] Métricas y monitoreo
-
-## 🛠️ Solución de Problemas
-
-### ⚠️ Python 3.13 Compatibility Issues
-
-**Problema:** Si estás usando **Python 3.13** y ves errores como:
-```
-AttributeError: module 'pkgutil' has no attribute 'ImpImporter'
-Getting requirements to build wheel did not run successfully
-```
-
-**Causa:** Python 3.13 es muy nuevo y muchas librerías no tienen soporte completo.
-
-**Solución rápida:**
-```bash
-cd setup
-fix-python313.bat
-```
-
-**Recomendación:** Usa **Python 3.11 o 3.12** para mejor compatibilidad y estabilidad.
-
-### Error: "CRASHES ARE TO BE EXPECTED" y warnings de NumPy MINGW-W64
-
-**Causa:** NumPy compilado con MINGW-W64 en Windows es experimental y puede causar problemas.
-
-**Síntomas:**
-```
-Warning: Numpy built with MINGW-W64 on Windows 64 bits is experimental
-CRASHES ARE TO BE EXPECTED - PLEASE REPORT THEM TO NUMPY DEVELOPERS
-RuntimeWarning: invalid value encountered in exp2
-```
-
-**Solución rápida:**
-```bash
-# Ejecutar el script de reparación:
-cd setup
-fix-numpy.bat
-
-# O reinstalar todo el entorno:
-Remove-Item -Recurse -Force ..\venv  # PowerShell
-setup.bat
-```
-
-**Solución manual:**
-```bash
-# Activar entorno virtual
-cd setup
-call ..\venv\Scripts\activate.bat
-
-# Reinstalar NumPy con versión estable
-pip uninstall -y numpy
-pip install "numpy>=1.21.0,<1.25.0"
-```
-
-### Error: "Could not find a version that satisfies the requirement torch==2.3.1"
-
-**Causa:** La versión específica de PyTorch ya no está disponible en PyPI.
-
-**Solución:**
-```bash
-# El requirements.txt ya está actualizado con versiones compatibles
-# Simplemente ejecuta setup nuevamente:
-cd setup
-./setup.bat   # Windows
-./setup.sh    # Linux/Mac
-
-# Si persiste el problema, instala PyTorch manualmente:
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-```
-
-### Error: "no module named fastapi"
-
-**Causas y soluciones:**
-
-1. **El entorno virtual no está activado**
-   ```bash
-   # Los scripts run.bat/run.sh ya verifican esto automáticamente
-   # Si ves este error, ejecuta setup nuevamente:
-   cd setup
-   ./setup.bat   # Windows
-   ./setup.sh    # Linux/Mac
-   ```
-
-2. **Las dependencias no se instalaron correctamente**
-   ```bash
-   # Reinstalar dependencias:
-   cd setup
-   ./setup.bat   # Windows - reinstala automáticamente
-   ./setup.sh    # Linux/Mac - reinstala automáticamente
-   ```
-
-3. **Problema con el entorno virtual**
-   ```bash
-   # Eliminar y recrear entorno virtual:
-   rmdir /s venv      # Windows
-   rm -rf venv        # Linux/Mac
-   
-   # Luego ejecutar setup nuevamente
-   cd setup
-   ./setup.bat
-   ```
-
-### Error: "Modelo YOLO no encontrado: best.pt"
-
-**Posibles causas y soluciones:**
-
-1. **Ejecutar script desde ubicación incorrecta**
-   ```bash
-   # ❌ Incorrecto:
-   ./setup.bat
-   
-   # ✅ Correcto:
-   cd setup
-   ./setup.bat
-   ```
-
-2. **El modelo no está en el repositorio**
-   - El sistema usará automáticamente YOLOv8n como fallback
-   - Para usar un modelo personalizado, coloca `best.pt` en la raíz del proyecto
-
-3. **Verificar ubicación del modelo**
-   - El script mostrará la ruta donde busca el modelo
-   - Asegúrate de que `best.pt` esté en `FactoriaF5API/best.pt`
-
-### Error: "Este script debe ejecutarse desde la carpeta setup"
-```bash
-# Solución:
-cd setup
-./setup.bat  # Windows
-./setup.sh   # Linux/Mac
-```
-
-### Error de instalación de dependencias
-```bash
-# Si hay problemas con pip, actualiza primero:
-python -m pip install --upgrade pip
-
-# Luego ejecuta el setup nuevamente
-cd setup
-./setup.bat
-```
-
-### Error: "Entorno virtual no encontrado"
-```bash
-# El entorno virtual se debe crear desde la carpeta setup:
-cd setup
-./setup.bat   # Windows
-./setup.sh    # Linux/Mac
-
-# Los scripts verifican automáticamente todas las dependencias
-```
 
 ## 📝 Notas Técnicas
 

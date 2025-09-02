@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from config import SUPABASE_URL, SUPABASE_SERVICE_ROLE
+from backend.core.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,9 +14,12 @@ class SupabaseClient:
             with open(file_path, 'rb') as f:
                 response = self.client.storage.from_(bucket).upload(destination_path, f)
             
-            if response.status_code == 200:
+            # Supabase storage upload returns different response format
+            # Check if upload was successful and get public URL
+            if response:
                 # Get public URL
                 public_url = self.client.storage.from_(bucket).get_public_url(destination_path)
+                logger.info(f"File uploaded successfully: {destination_path}")
                 return public_url
             else:
                 raise Exception(f"Upload failed: {response}")
