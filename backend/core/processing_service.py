@@ -65,6 +65,31 @@ class ProcessingService:
                 # Detect objects in frame
                 detections = yolo_processor.detect_objects(frame)
                 
+                # If there are detections in this frame, save the full frame
+                frame_capture_id = None
+                if detections:
+                    # Save full frame with detections
+                    frame_filename = f"frame_{frame_idx:06d}.jpg"
+                    frame_capture_path = video_processor.save_full_frame(frame, frames_dir, frame_filename)
+                    
+                    # Upload frame to storage
+                    frame_storage_path = f"frames/{session_id}/{frame_filename}"
+                    frame_url = await supabase_client.upload_file_to_storage(
+                        frame_capture_path, SUPABASE_IMAGES_BUCKET, frame_storage_path
+                    )
+                    
+                    # Insert frame capture record
+                    frame_capture_data = {
+                        'file_id': file_id,
+                        'frame_number': frame_idx,
+                        'bucket': SUPABASE_IMAGES_BUCKET,
+                        'path': frame_storage_path,
+                        'public_url': frame_url,
+                        't_start': t_start,
+                        't_end': t_end
+                    }
+                    frame_capture_id = await supabase_client.insert_frame_capture(frame_capture_data)
+                
                 for detection in detections:
                     # Crop detection area
                     crop = yolo_processor.crop_detection(frame, detection['bbox'])
@@ -91,7 +116,8 @@ class ProcessingService:
                         't_start': t_start,
                         't_end': t_end,
                         'frame': frame_idx,
-                        'model': 'yolov8'
+                        'model': 'yolov8',
+                        'frame_capture_id': frame_capture_id  # Link to frame capture
                     }
                     
                     # Insert detection
@@ -158,6 +184,37 @@ class ProcessingService:
             crops_dir = os.path.join(CROPS_DIR, session_id)
             detection_ids = []
             
+            # If there are detections, save the full image as frame capture
+            frame_capture_id = None
+            if detections:
+                # Create frames directory for this session
+                frames_dir = os.path.join(FRAMES_DIR, session_id)
+                
+                # Save full image with detections
+                frame_filename = f"image_frame.jpg"
+                frame_capture_path = video_processor.save_full_frame(image, frames_dir, frame_filename)
+                
+                # Upload frame to storage
+                frame_storage_path = f"frames/{session_id}/{frame_filename}"
+                frame_url = await supabase_client.upload_file_to_storage(
+                    frame_capture_path, SUPABASE_IMAGES_BUCKET, frame_storage_path
+                )
+                
+                # Insert frame capture record
+                frame_capture_data = {
+                    'file_id': file_id,
+                    'frame_number': 0,  # Single image, frame 0
+                    'bucket': SUPABASE_IMAGES_BUCKET,
+                    'path': frame_storage_path,
+                    'public_url': frame_url,
+                    't_start': 0.0,
+                    't_end': 0.0
+                }
+                frame_capture_id = await supabase_client.insert_frame_capture(frame_capture_data)
+                
+                # Cleanup frames directory after upload
+                shutil.rmtree(frames_dir, ignore_errors=True)
+            
             for idx, detection in enumerate(detections):
                 # Crop detection area
                 crop = yolo_processor.crop_detection(image, detection['bbox'])
@@ -182,7 +239,8 @@ class ProcessingService:
                     'score': detection['confidence'],
                     'bbox': detection['bbox'],
                     'frame': 0,
-                    'model': 'yolov8'
+                    'model': 'yolov8',
+                    'frame_capture_id': frame_capture_id  # Link to frame capture
                 }
                 
                 # Insert detection

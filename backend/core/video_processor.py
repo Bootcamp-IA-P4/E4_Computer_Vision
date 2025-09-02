@@ -98,6 +98,17 @@ class VideoProcessor:
         except Exception as e:
             logger.error(f"Error saving frame crop: {e}")
             raise
+    
+    def save_full_frame(self, frame: np.ndarray, frames_dir: str, filename: str) -> str:
+        """Save complete frame to directory for detection context"""
+        try:
+            os.makedirs(frames_dir, exist_ok=True)
+            frame_path = os.path.join(frames_dir, filename)
+            cv2.imwrite(frame_path, frame)
+            return frame_path
+        except Exception as e:
+            logger.error(f"Error saving full frame: {e}")
+            raise
 
 # Global instance
 video_processor = VideoProcessor()
