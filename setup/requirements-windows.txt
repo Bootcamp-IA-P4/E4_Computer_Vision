@@ -1,0 +1,41 @@
+# Windows-specific requirements with stable NumPy builds
+# Use this file for Windows installations to avoid MINGW-W64 warnings
+
+# Core FastAPI dependencies
+fastapi>=0.116.1
+uvicorn[standard]>=0.35.0
+python-multipart>=0.0.20
+python-dotenv>=1.1.1
+
+# Supabase dependencies
+supabase>=2.18.1
+httpx>=0.28.1
+
+# Machine Learning dependencies - Windows optimized
+ultralytics==8.3.191
+# PyTorch with CPU support (more stable on Windows)
+torch>=2.6.0 --index-url https://download.pytorch.org/whl/cpu
+torchvision>=0.19.0 --index-url https://download.pytorch.org/whl/cpu
+# NumPy stable version for Windows
+numpy>=1.21.0,<1.25.0
+# OpenCV stable version
+opencv-python>=4.8.0,<4.10.0
+
+# Utility dependencies
+requests>=2.31.0
+pillow>=10.1.0
+tqdm>=4.67.1
+PyYAML>=6.0.2
+aiofiles>=23.2.1
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+
+# Websockets for Supabase realtime
+websockets>=15.0.1
+
+# Optional: for better logging and monitoring
+psutil>=7.0.0
+
+# Additional stability packages for Windows
+setuptools>=65.0.0
+wheel>=0.37.0
