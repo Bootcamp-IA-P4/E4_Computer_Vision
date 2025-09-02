@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import './VideoUpload.css';
 import { VideoFile } from '../../types';
+import { apiService } from '../../services/api';
 
 interface VideoUploadProps {
   onVideoUpload: (videos: VideoFile[]) => void;
@@ -26,7 +27,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     return null;
   };
 
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback(async (file: File) => {
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
@@ -46,30 +47,46 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
       progress: 0
     };
 
-    // Simulate upload progress
-    const progressInterval = setInterval(() => {
-      setUploadedFiles(prev => 
-        prev.map(f => 
-          f.id === fileId 
-            ? { ...f, progress: Math.min((f.progress || 0) + Math.random() * 20, 100) }
-            : f
-        )
-      );
-    }, 200);
-
-    // Complete upload after 2 seconds
-    setTimeout(() => {
-      clearInterval(progressInterval);
-      setUploadedFiles(prev => 
-        prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'uploaded', progress: 100 }
-            : f
-        )
-      );
-    }, 2000);
-
     setUploadedFiles(prev => [...prev, videoFile]);
+
+    try {
+      // Upload file to backend with progress tracking
+      const response = await apiService.uploadFile(file, (progress) => {
+        setUploadedFiles(prev => 
+          prev.map(f => 
+            f.id === fileId 
+              ? { ...f, progress }
+              : f
+          )
+        );
+      });
+
+      // Update file with session ID and mark as uploaded
+      setUploadedFiles(prev => 
+        prev.map(f => 
+          f.id === fileId 
+            ? { 
+                ...f, 
+                status: 'uploaded', 
+                progress: 100,
+                sessionId: response.session_id 
+              }
+            : f
+        )
+      );
+
+      console.log('✅ File uploaded successfully:', response);
+    } catch (error) {
+      console.error('❌ Upload failed:', error);
+      setUploadedFiles(prev => 
+        prev.map(f => 
+          f.id === fileId 
+            ? { ...f, status: 'error', error: error instanceof Error ? error.message : 'Upload failed' }
+            : f
+        )
+      );
+      setError(error instanceof Error ? error.message : 'Upload failed');
+    }
   }, []);
 
   const handleMultipleFiles = useCallback((files: FileList) => {

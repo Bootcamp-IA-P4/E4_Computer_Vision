@@ -1,36 +1,90 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import VideoUpload from './components/VideoUpload/VideoUpload';
 import LogoSelector from './components/LogoSelector/LogoSelector';
 import ProgressBar from './components/UI/ProgressBar/ProgressBar';
+import ProcessingStatus from './components/ProcessingStatus/ProcessingStatus';
+import ResultsDisplay from './components/ResultsDisplay/ResultsDisplay';
 import { VideoFile, Logo } from './types';
+import { ProcessingResult, apiService } from './services/api';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'select' | 'process' | 'results'>('upload');
   const [selectedVideos, setSelectedVideos] = useState<VideoFile[]>([]);
   const [selectedLogos, setSelectedLogos] = useState<Logo[]>([]);
   const [processingProgress, setProcessingProgress] = useState(0);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize API service on app start
+  useEffect(() => {
+    const initApi = async () => {
+      try {
+        await apiService.initialize();
+        setIsInitialized(true);
+        console.log('✅ API service initialized');
+      } catch (error) {
+        console.error('❌ Failed to initialize API service:', error);
+        setIsInitialized(true); // Continue anyway with default config
+      }
+    };
+
+    initApi();
+  }, []);
 
   const handleVideoUpload = (videos: VideoFile[]) => {
     setSelectedVideos(videos);
     setCurrentStep('select');
   };
 
-  const handleLogoSelection = (logos: Logo[]) => {
+  const handleLogoSelection = async (logos: Logo[]) => {
     setSelectedLogos(logos);
     setCurrentStep('process');
     
-    // Simulate processing
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setCurrentStep('results');
+    // Get session ID from the first uploaded video
+    const firstVideo = selectedVideos[0];
+    if (firstVideo?.sessionId) {
+      setCurrentSessionId(firstVideo.sessionId);
+      
+      // Start processing after logo selection
+      try {
+        console.log('🚀 Starting processing for session:', firstVideo.sessionId);
+        await apiService.startProcessing(firstVideo.sessionId);
+        console.log('✅ Processing started successfully');
+      } catch (error) {
+        console.error('❌ Failed to start processing:', error);
+        setProcessingError(error instanceof Error ? error.message : 'Failed to start processing');
       }
-      setProcessingProgress(progress);
-    }, 200);
+    } else {
+      setProcessingError('No session ID found for processing');
+    }
+  };
+
+  const handleProcessingComplete = (result: ProcessingResult) => {
+    setProcessingResult(result);
+    setCurrentStep('results');
+  };
+
+  const handleProcessingError = (error: string) => {
+    setProcessingError(error);
+    setCurrentStep('results');
+  };
+
+  const handleToggleBrand = (brandName: string) => {
+    setSelectedLogos(prevLogos => {
+      const isSelected = prevLogos.some(logo => logo.name === brandName);
+      if (isSelected) {
+        return prevLogos.filter(logo => logo.name !== brandName);
+      } else {
+        return [...prevLogos, { 
+          name: brandName, 
+          id: Date.now(), // Generate a unique ID
+          selected: true 
+        }];
+      }
+    });
   };
 
   const resetApp = () => {
@@ -38,7 +92,23 @@ function App() {
     setSelectedVideos([]);
     setSelectedLogos([]);
     setProcessingProgress(0);
+    setCurrentSessionId(null);
+    setProcessingResult(null);
+    setProcessingError(null);
   };
+
+  // Show loading screen while initializing
+  if (!isInitialized) {
+    return (
+      <div className="app">
+        <div className="loading-screen">
+          <div className="loading-spinner"></div>
+          <h2>Initializing LogoVision Pro...</h2>
+          <p>Loading configuration and connecting to API</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -110,7 +180,7 @@ function App() {
         )}
 
         {/* Step 3: Processing */}
-        {currentStep === 'process' && (
+        {currentStep === 'process' && currentSessionId && (
           <div className="step-content">
             <div className="step-section">
               <div className="step-header">
@@ -121,27 +191,11 @@ function App() {
                 </p>
               </div>
               
-              <div className="processing-status">
-                <div className="video-info">
-                  <h3>Video Information</h3>
-                  <p><strong>Total Files:</strong> {selectedVideos.length}</p>
-                  <p><strong>Total Size:</strong> {selectedVideos.reduce((total, video) => total + video.size, 0) / 1024 / 1024} MB</p>
-                  <p><strong>Files:</strong></p>
-                  <ul className="video-files-list">
-                    {selectedVideos.map((video, index) => (
-                      <li key={video.id}>
-                        {index + 1}. {video.name} ({(video.size / 1024 / 1024).toFixed(2)} MB)
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <div className="process-info">
-                  <h3>Processing Progress</h3>
-                  <ProgressBar progress={processingProgress} />
-                  <p>Analyzing {selectedLogos.length} selected logos...</p>
-                </div>
-              </div>
+              <ProcessingStatus 
+                sessionId={currentSessionId}
+                onComplete={handleProcessingComplete}
+                onError={handleProcessingError}
+              />
             </div>
           </div>
         )}
@@ -154,59 +208,45 @@ function App() {
                 <div className="step-number">4</div>
                 <h2>Analysis Results</h2>
                 <p className="step-description">
-                  Your video has been analyzed successfully
+                  {processingError ? 'Processing encountered an error' : 'Your video has been analyzed successfully'}
                 </p>
               </div>
               
-              <div className="results-summary">
-                <div className="summary-stats">
-                  <div className="stat-card">
-                    <div className="stat-icon"></div>
-                    <div className="stat-number">12</div>
-                    <div className="stat-label">Logos Found</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon"></div>
-                    <div className="stat-number">2.3s</div>
-                    <div className="stat-label">Processing Time</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-icon"></div>
-                    <div className="stat-number">98.5%</div>
-                    <div className="stat-label">Accuracy</div>
+              {processingError ? (
+                <div className="error-results">
+                  <div className="error-icon">❌</div>
+                  <h3>Processing Error</h3>
+                  <p className="error-message">{processingError}</p>
+                  <div className="action-buttons">
+                    <button className="btn btn-primary" onClick={resetApp}>
+                      Try Again
+                    </button>
                   </div>
                 </div>
-                
-                <div className="detected-logos">
-                  <h3>Detected Logos</h3>
-                  <div className="logo-results">
-                    {selectedLogos.map(logo => (
-                      <div key={logo.id} className="result-logo">
-                        <span className="logo-name">{logo.name}</span>
-                        <span className="detection-count">3 instances</span>
-                      </div>
-                    ))}
+              ) : processingResult ? (
+                <div className="results-container">
+                  <ResultsDisplay 
+                    result={processingResult} 
+                    selectedLogos={selectedLogos} 
+                    onToggleBrand={handleToggleBrand}
+                  />
+                  <div className="action-buttons">
+                    <button className="btn btn-primary" onClick={resetApp}>
+                      Analyze Another Video
+                    </button>
+                    <button className="btn btn-secondary">
+                      Download Report
+                    </button>
                   </div>
                 </div>
-                
-                <div className="recommendations">
-                  <h3>Recommendations</h3>
-                  <ul>
-                    <li>High-quality logos detected with confidence</li>
-                    <li>Consider optimizing video resolution for better results</li>
-                    <li>Multiple logo instances found throughout the video</li>
-                  </ul>
-                </div>
-                
-                <div className="action-buttons">
+              ) : (
+                <div className="no-results">
+                  <p>No results available</p>
                   <button className="btn btn-primary" onClick={resetApp}>
-                    Analyze Another Video
-                  </button>
-                  <button className="btn btn-secondary">
-                    Download Report
+                    Start Over
                   </button>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}

@@ -1,0 +1,79 @@
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.brand-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Размеры логотипов */
+.brand-logo.small {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.brand-logo.medium {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.brand-logo.large {
+  width: 160px;
+  height: 80px;
+  min-width: 160px;
+  min-height: 80px;
+}
+
+/* Специальные стили для VideoPlayer */
+.brand-logo.video-overlay {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 3px;
+  margin-right: 4px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .brand-logo.small {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+  }
+  
+  .brand-logo.medium {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+  
+  .brand-logo.large {
+    width: 140px;
+    height: 70px;
+    min-width: 140px;
+    min-height: 70px;
+  }
+  
+  .brand-logo.video-overlay {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
+}

@@ -8,6 +8,7 @@ export interface VideoFile {
   status: 'uploading' | 'uploaded' | 'error' | 'processing';
   progress?: number;
   error?: string;
+  sessionId?: string;
 }
 
 // Типы для логотипов
@@ -74,6 +75,18 @@ export interface AnalysisStatus {
   progress: number;
   message?: string;
   results?: VideoAnalysisStats;
+}
+
+// Типы для ProcessingStatus
+export type ProcessingStatusType = 'ready' | 'processing' | 'completed' | 'error' | 'not_found';
+
+export interface ProcessingStatusData {
+  status: ProcessingStatusType;
+  progress?: number;
+  message?: string;
+  result?: any;
+  stage?: string;
+  error?: string;
 }
 
 // Типы для настроек приложения
