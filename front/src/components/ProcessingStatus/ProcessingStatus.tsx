@@ -13,9 +13,10 @@ interface ProcessingStatusProps {
 const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ sessionId, onComplete, onError }) => {
   const [status, setStatus] = useState<ProcessingStatusData | null>(null);
   const [isPolling, setIsPolling] = useState(true);
+  const [hasCompleted, setHasCompleted] = useState(false);
 
   useEffect(() => {
-    if (!sessionId || !isPolling) return;
+    if (!sessionId || !isPolling || hasCompleted) return;
 
     const pollStatus = async () => {
       try {
@@ -25,35 +26,62 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ sessionId, onComple
 
         console.log(`📊 Status: ${currentStatus.status}`, currentStatus);
 
-        if (currentStatus.status === 'completed' && currentStatus.result) {
+        if (currentStatus.status === 'completed' && currentStatus.result && !hasCompleted) {
           console.log('✅ Processing completed!', currentStatus.result);
+          setHasCompleted(true);
           setIsPolling(false);
           onComplete(currentStatus.result);
+          return; // Stop polling immediately
         } else if (currentStatus.status === 'error') {
           console.error('❌ Processing failed:', currentStatus.error);
+          setHasCompleted(true);
           setIsPolling(false);
           onError(currentStatus.error || 'Processing failed');
+          return; // Stop polling immediately
         }
       } catch (error) {
         console.error('❌ Error polling status:', error);
+        setHasCompleted(true);
         setIsPolling(false);
         onError(error instanceof Error ? error.message : 'Failed to check processing status');
+        return; // Stop polling immediately
       }
     };
 
     // Poll immediately
     pollStatus();
 
-    // Set up polling interval
-    const interval = setInterval(pollStatus, 2000); // Poll every 2 seconds
+    // Set up polling interval only if still polling and not completed
+    const interval = setInterval(() => {
+      if (isPolling && !hasCompleted) {
+        pollStatus();
+      }
+    }, 2000); // Poll every 2 seconds
 
     return () => {
       clearInterval(interval);
     };
-  }, [sessionId, isPolling, onComplete, onError]);
+  }, [sessionId, isPolling, hasCompleted, onComplete, onError]);
+
+  // Reset state when sessionId changes
+  useEffect(() => {
+    console.log(`🔄 ProcessingStatus: Session changed to: ${sessionId}`);
+    setStatus(null);
+    setIsPolling(true);
+    setHasCompleted(false);
+  }, [sessionId]);
+
+  // Stop polling when component unmounts
+  useEffect(() => {
+    return () => {
+      console.log(`🛑 ProcessingStatus: Component unmounting for session: ${sessionId}`);
+      setIsPolling(false);
+      setHasCompleted(true);
+    };
+  }, [sessionId]);
 
   const getStatusMessage = () => {
-    if (!status) return 'Checking status...';
+    if (!status) return '';
     
     switch (status.status) {
       case 'ready':
@@ -87,19 +115,9 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ sessionId, onComple
       <div className="status-container">
         <div className="status-header">
           <h3>🔄 Processing Status</h3>
-          <p className="status-message">{getStatusMessage()}</p>
-        </div>
-
-        <div className="progress-section">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill" 
-              style={{ width: `${getProgressPercentage()}%` }}
-            ></div>
-          </div>
-          <div className="progress-text">
-            {getProgressPercentage()}%
-          </div>
+          {getStatusMessage() && (
+            <p className="status-message">{getStatusMessage()}</p>
+          )}
         </div>
 
         {status?.stage && (

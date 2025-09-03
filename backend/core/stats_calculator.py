@@ -27,7 +27,7 @@ class StatisticsCalculator:
             
             # Process each detection
             for detection in detections:
-                brand_name = detection['class_name']
+                brand_name = detection.get('class_name', detection.get('brand_name', 'Unknown'))
                 score = detection.get('confidence', detection.get('score', 0.0))  # Handle both confidence and score
                 frame_number = detection.get('frame_number', detection.get('frame', 0))
                 
@@ -65,9 +65,9 @@ class StatisticsCalculator:
                 
                 avg_score = stats['total_score'] / stats['total_detections'] if stats['total_detections'] > 0 else 0.0
                 
-                # Ensure total_seconds is never None or negative
-                if total_seconds is None or total_seconds < 0:
-                    total_seconds = 0
+                # Ensure duration_seconds is never None or negative
+                if duration_seconds is None or duration_seconds < 0:
+                    duration_seconds = 0
                 
                 final_stats[brand_name] = {
                     'total_detections': stats['total_detections'],

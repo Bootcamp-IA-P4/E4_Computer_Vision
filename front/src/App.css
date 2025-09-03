@@ -1346,3 +1346,70 @@ body, html {
 .video-files-list li:last-child {
   margin-bottom: 0;
 }
+
+/* Multiple Video Results */
+.video-result {
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(74, 44, 122, 0.1);
+}
+
+.video-result h3 {
+  margin: 0 0 1.5rem 0;
+  color: #4a2c7a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(74, 44, 122, 0.1);
+}
+
+.processing-progress {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Action buttons for results */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 2px solid rgba(74, 44, 122, 0.1);
+}
+
+.action-buttons .btn {
+  min-width: 200px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Responsive adjustments for multiple videos */
+@media (max-width: 768px) {
+  .video-result {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+  }
+  
+  .video-result h3 {
+    font-size: 1.3rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-buttons .btn {
+    min-width: 250px;
+    width: 100%;
+    max-width: 300px;
+  }
+}

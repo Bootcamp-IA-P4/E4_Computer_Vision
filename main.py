@@ -245,6 +245,9 @@ async def upload_file_async(background_tasks: BackgroundTasks, file: UploadFile 
         processing_progress[session_id] = {"progress": 0, "stage": "File uploaded, ready for processing"}
         
         logger.info(f"📁 File uploaded successfully for session: {session_id}")
+        logger.info(f"📁 File saved to: {temp_file_path}")
+        logger.info(f"📋 Total sessions in processing_progress: {len(processing_progress)}")
+        logger.info(f"📋 All session IDs: {list(processing_progress.keys())}")
         logger.info(f"⏳ Waiting for user to select logos before processing")
         
         return JSONResponse(content={
@@ -263,19 +266,37 @@ async def start_processing(session_id: str, background_tasks: BackgroundTasks):
     """Start processing for uploaded file after logo selection"""
     try:
         logger.info(f"🚀 Starting processing for session: {session_id}")
+        logger.info(f"📋 Available sessions in processing_progress: {list(processing_progress.keys())}")
+        
+        # Check if session already has a result (already processed)
+        if session_id in processing_results:
+            logger.info(f"✅ Session {session_id} already processed, returning existing result")
+            return JSONResponse(content={
+                "message": "Processing already completed",
+                "session_id": session_id,
+                "filename": "already_processed"
+            })
         
         # Check if session exists in progress tracking
         if session_id not in processing_progress:
+            logger.error(f"❌ Session {session_id} not found in processing_progress")
             raise HTTPException(status_code=404, detail="Session not found")
         
         # Find the uploaded file for this session
         session_dir = os.path.join(UPLOAD_DIR, session_id)
+        logger.info(f"📁 Looking for session directory: {session_dir}")
+        logger.info(f"📁 Directory exists: {os.path.exists(session_dir)}")
+        
         if not os.path.exists(session_dir):
+            logger.error(f"❌ Session directory not found: {session_dir}")
             raise HTTPException(status_code=404, detail="Uploaded file not found")
         
         # Get the first file in the session directory
         files = os.listdir(session_dir)
+        logger.info(f"📁 Files in session directory: {files}")
+        
         if not files:
+            logger.error(f"❌ No files found in session directory: {session_dir}")
             raise HTTPException(status_code=404, detail="No files found for session")
         
         file_path = os.path.join(session_dir, files[0])

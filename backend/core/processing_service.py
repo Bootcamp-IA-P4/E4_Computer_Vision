@@ -112,7 +112,7 @@ class ProcessingService:
                     # Get or create brand
                     brand_id = await supabase_client.get_or_create_brand(detection['class_name'])
                     
-                    # Prepare detection data (removing frame_capture_id as it's not in the schema)
+                    # Prepare detection data
                     detection_data = {
                         'file_id': file_id,
                         'brand_id': brand_id,
@@ -121,7 +121,8 @@ class ProcessingService:
                         't_start': t_start,
                         't_end': t_end,
                         'frame': frame_idx,
-                        'model': 'yolov8'
+                        'model': 'yolov8',
+                        'frame_capture_id': frame_capture_id
                     }
                     
                     # Insert detection
@@ -239,14 +240,15 @@ class ProcessingService:
                 # Get or create brand
                 brand_id = await supabase_client.get_or_create_brand(detection['class_name'])
                 
-                # Prepare detection data (removing frame_capture_id as it's not in the schema)
+                # Prepare detection data
                 detection_data = {
                     'file_id': file_id,
                     'brand_id': brand_id,
                     'score': detection['confidence'],
                     'bbox': detection['bbox'],
                     'frame': 0,
-                    'model': 'yolov8'
+                    'model': 'yolov8',
+                    'frame_capture_id': frame_capture_id
                 }
                 
                 # Insert detection

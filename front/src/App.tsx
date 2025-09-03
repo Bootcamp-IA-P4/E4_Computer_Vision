@@ -14,8 +14,9 @@ function App() {
   const [selectedLogos, setSelectedLogos] = useState<Logo[]>([]);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
+  const [processingResults, setProcessingResults] = useState<ProcessingResult[]>([]);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [currentProcessingIndex, setCurrentProcessingIndex] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize API service on app start
@@ -34,21 +35,55 @@ function App() {
     initApi();
   }, []);
 
+  // Debug logging for processing results and selected logos
+  useEffect(() => {
+    console.log('🎯 App - processingResults updated:', processingResults.length, 'results');
+    if (processingResults.length > 0) {
+      console.log('🎯 App - processingResults:', processingResults.map(r => ({ file_id: r.file_id, session_id: r.session_id, brands: r.brands_detected })));
+      console.log('🎯 App - selectedLogos:', selectedLogos);
+      
+      // Специальная отладка для Microsoft
+      const microsoftInSelected = selectedLogos.find(logo => logo.name.toLowerCase().includes('microsoft'));
+      console.log('🎯 App - Microsoft debug:', {
+        inSelected: microsoftInSelected,
+        selectedLogos: selectedLogos.map(logo => ({ id: logo.id, name: logo.name, selected: logo.selected }))
+      });
+    }
+  }, [processingResults, selectedLogos]);
+
   const handleVideoUpload = (videos: VideoFile[]) => {
     setSelectedVideos(videos);
     setCurrentStep('select');
   };
 
   const handleLogoSelection = async (logos: Logo[]) => {
+    console.log('🎯 App: handleLogoSelection called with logos:', logos);
+    console.log('🎯 App: Microsoft in selected logos:', logos.find(logo => logo.name.toLowerCase().includes('microsoft')));
+    
     setSelectedLogos(logos);
     setCurrentStep('process');
     
-    // Get session ID from the first uploaded video
-    const firstVideo = selectedVideos[0];
-    if (firstVideo?.sessionId) {
+    // Start processing all uploaded videos
+    const uploadedVideos = selectedVideos.filter(video => video.status === 'uploaded' && video.sessionId);
+    
+    if (uploadedVideos.length === 0) {
+      setProcessingError('No uploaded videos found for processing');
+      return;
+    }
+
+    console.log(`🚀 Starting processing for ${uploadedVideos.length} videos`);
+    
+    // Start processing the first video
+    const firstVideo = uploadedVideos[0];
+    if (!firstVideo.sessionId) {
+      setProcessingError('No session ID found for first video');
+      return;
+    }
+    
       setCurrentSessionId(firstVideo.sessionId);
+    setCurrentProcessingIndex(0);
+    setProcessingResults([]);
       
-      // Start processing after logo selection
       try {
         console.log('🚀 Starting processing for session:', firstVideo.sessionId);
         await apiService.startProcessing(firstVideo.sessionId);
@@ -56,15 +91,68 @@ function App() {
       } catch (error) {
         console.error('❌ Failed to start processing:', error);
         setProcessingError(error instanceof Error ? error.message : 'Failed to start processing');
-      }
-    } else {
-      setProcessingError('No session ID found for processing');
     }
   };
 
-  const handleProcessingComplete = (result: ProcessingResult) => {
-    setProcessingResult(result);
+  const handleProcessingComplete = async (result: ProcessingResult) => {
+    console.log('🎯 App: Processing completed for video:', result.file_id, 'session:', result.session_id);
+    console.log('🎯 App: Current processing results:', processingResults.map(r => ({ file_id: r.file_id, session_id: r.session_id })));
+    
+    // Add result to the array first, then check for duplicates
+    setProcessingResults(prev => {
+      // Check if this result is already in our results array to avoid duplicates
+      const isDuplicate = prev.some(existingResult => existingResult.session_id === result.session_id);
+      if (isDuplicate) {
+        console.log('🎯 App: Duplicate result detected, ignoring session:', result.session_id);
+        return prev; // Return existing array without adding duplicate
+      }
+      
+      console.log('🎯 App: Adding new result to array:', result.session_id);
+      return [...prev, result];
+    });
+    
+    // Use setTimeout to ensure state update is processed before checking next video
+    setTimeout(() => {
+      // Check if there are more videos to process
+      const uploadedVideos = selectedVideos.filter(video => video.status === 'uploaded' && video.sessionId);
+      const nextIndex = currentProcessingIndex + 1;
+      
+      console.log(`🎯 App: Processing status - currentIndex: ${currentProcessingIndex}, nextIndex: ${nextIndex}, totalVideos: ${uploadedVideos.length}`);
+      
+      if (nextIndex < uploadedVideos.length) {
+        // Process next video
+        const nextVideo = uploadedVideos[nextIndex];
+        if (!nextVideo.sessionId) {
+          console.error('❌ No session ID found for next video');
+          setProcessingError('No session ID found for next video');
+          setCurrentStep('results');
+          return;
+        }
+        
+        // Update current session ID to the next video's session ID
+        setCurrentSessionId(nextVideo.sessionId);
+        setCurrentProcessingIndex(nextIndex);
+        
+        try {
+          console.log(`🚀 Starting processing for next video (${nextIndex + 1}/${uploadedVideos.length}):`, nextVideo.sessionId);
+          apiService.startProcessing(nextVideo.sessionId).then(() => {
+            console.log('✅ Processing started for next video');
+          }).catch((error) => {
+            console.error('❌ Failed to start processing next video:', error);
+            setProcessingError(error instanceof Error ? error.message : 'Failed to start processing next video');
+            setCurrentStep('results');
+          });
+        } catch (error) {
+          console.error('❌ Failed to start processing next video:', error);
+          setProcessingError(error instanceof Error ? error.message : 'Failed to start processing next video');
+          setCurrentStep('results');
+        }
+      } else {
+        // All videos processed, show results
+        console.log('🎯 App: All videos processed, showing results');
     setCurrentStep('results');
+      }
+    }, 100); // Small delay to ensure state update is processed
   };
 
   const handleProcessingError = (error: string) => {
@@ -93,8 +181,29 @@ function App() {
     setSelectedLogos([]);
     setProcessingProgress(0);
     setCurrentSessionId(null);
-    setProcessingResult(null);
+    setProcessingResults([]);
     setProcessingError(null);
+    setCurrentProcessingIndex(0);
+  };
+
+  const handleDownloadReport = () => {
+    if (processingResults.length === 0) return;
+    
+    // For now, just show an alert. In a real implementation, this would generate and download a PDF report
+    const reportData = {
+      totalVideos: processingResults.length,
+      totalDetections: processingResults.reduce((sum, result) => sum + (result.detections?.length || result.detections_count || 0), 0),
+      totalBrands: processingResults.reduce((sum, result) => sum + (result.brands_detected?.length || 0), 0),
+      videos: processingResults.map((result, index) => ({
+        videoNumber: index + 1,
+        fileId: result.file_id,
+        detections: result.detections?.length || result.detections_count || 0,
+        brands: result.brands_detected?.join(', ') || 'None'
+      }))
+    };
+    
+    console.log('📊 Report data:', reportData);
+    alert(`Отчет будет загружен!\n\nОбработано видео: ${reportData.totalVideos}\nВсего обнаружений: ${reportData.totalDetections}\nВсего брендов: ${reportData.totalBrands}`);
   };
 
   // Show loading screen while initializing
@@ -182,7 +291,12 @@ function App() {
                 <div className="step-number">3</div>
                 <h2>Processing Video</h2>
                 <p className="step-description">
-                  AI is analyzing your video for logo detection
+                  AI is analyzing your video{selectedVideos.length > 1 ? 's' : ''} for logo detection
+                  {selectedVideos.length > 1 && (
+                    <span className="processing-progress">
+                      (Video {currentProcessingIndex + 1} of {selectedVideos.filter(v => v.status === 'uploaded').length})
+                    </span>
+                  )}
                 </p>
               </div>
               
@@ -203,7 +317,10 @@ function App() {
                 <div className="step-number">4</div>
                 <h2>Analysis Results</h2>
                 <p className="step-description">
-                  {processingError ? 'Processing encountered an error' : 'Your video has been analyzed successfully'}
+                  {processingError ? 'Processing encountered an error' : 
+                   processingResults.length > 1 ? 
+                     `Successfully analyzed ${processingResults.length} videos` : 
+                     'Your video has been analyzed successfully'}
                 </p>
               </div>
               
@@ -218,19 +335,26 @@ function App() {
                     </button>
                   </div>
                 </div>
-              ) : processingResult ? (
+              ) : processingResults.length > 0 ? (
                 <div className="results-container">
-                  <ResultsDisplay 
-                    result={processingResult} 
-                    selectedLogos={selectedLogos} 
-                    onToggleBrand={handleToggleBrand}
-                  />
+                  {processingResults.map((result, index) => (
+                    <div key={result.file_id || index} className="video-result">
+                      <h3>Video {index + 1} Results</h3>
+                      <ResultsDisplay 
+                        result={result} 
+                        selectedLogos={selectedLogos} 
+                        onToggleBrand={handleToggleBrand}
+                      />
+                    </div>
+                  ))}
+                  
+                  {/* Action buttons outside the map loop */}
                   <div className="action-buttons">
                     <button className="btn btn-primary" onClick={resetApp}>
-                      Analyze Another Video
+                      {processingResults.length > 1 ? 'Analyze More Videos' : 'Analyze Another Video'}
                     </button>
-                    <button className="btn btn-secondary">
-                      Download Report
+                    <button className="btn btn-secondary" onClick={handleDownloadReport}>
+                      {processingResults.length > 1 ? 'Download All Reports' : 'Download Report'}
                     </button>
                   </div>
                 </div>

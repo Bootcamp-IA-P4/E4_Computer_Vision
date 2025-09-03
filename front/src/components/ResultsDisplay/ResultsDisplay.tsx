@@ -17,24 +17,48 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   const [detections, setDetections] = useState<DetectionRecord[]>([]);
   const [loadingDetections, setLoadingDetections] = useState(false);
   const [isFramesExpanded, setIsFramesExpanded] = useState(false);
-  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ duration_seconds?: number; fps?: number } | null>(null);
 
   // Log fileInfo changes
   useEffect(() => {
-    console.log('🎬 FileInfo updated:', fileInfo);
     if (fileInfo) {
       console.log('🎬 Video duration from fileInfo:', fileInfo.duration_seconds);
     }
   }, [fileInfo]);
 
+  // Log detections changes
+  useEffect(() => {
+    console.log('🔍 Frame Captures - detections.length:', detections.length);
+  }, [detections]);
+
+  // Log brands condition check
+  useEffect(() => {
+    console.log('🔍 Brands condition check:', {
+      brands_detected: result.brands_detected,
+      length: result.brands_detected?.length || 0,
+      condition: (result.brands_detected?.length || 0) > 0
+    });
+  }, [result.brands_detected]);
+
+  // Log frame captures condition check
+  useEffect(() => {
+    console.log('🔍 Frame Captures condition check:', {
+      detections: detections,
+      length: detections.length,
+      condition: detections.length > 0
+    });
+  }, [detections]);
+
   console.log('🎨 ResultsDisplay render with result:', result);
   console.log('🎨 ResultsDisplay - result.detections_count:', result.detections_count);
   console.log('🎨 ResultsDisplay - result.brands_detected:', result.brands_detected);
+  console.log('🎨 ResultsDisplay - result.brands_detected.length:', result.brands_detected?.length || 0);
   console.log('🎨 ResultsDisplay - result.statistics:', result.statistics);
   console.log('🎨 ResultsDisplay - selectedLogos:', selectedLogos);
+  console.log('🎨 ResultsDisplay - selectedLogos.length:', selectedLogos.length);
   
   // Debug statistics for each brand
   if (result.statistics) {
@@ -67,20 +91,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         // Debug: show first few detections in detail
         if (detectionsResponse.detections.length > 0) {
           console.log('🔍 First detection sample:', detectionsResponse.detections[0]);
-          console.log('🖼️ Frame capture URLs available:', {
-            frame_capture_url: (detectionsResponse.detections[0] as any).frame_capture_url,
-            frame_capture_path: (detectionsResponse.detections[0] as any).frame_capture_path,
-            frame_number: (detectionsResponse.detections[0] as any).frame_number
-          });
-          console.log('📐 Bounding box info:', {
-            bbox: detectionsResponse.detections[0].bbox,
-            calculated_percentages: {
-              left: `${(detectionsResponse.detections[0].bbox[0] / 1920) * 100}%`,
-              top: `${(detectionsResponse.detections[0].bbox[1] / 1080) * 100}%`,
-              width: `${((detectionsResponse.detections[0].bbox[2] - detectionsResponse.detections[0].bbox[0]) / 1920) * 100}%`,
-              height: `${((detectionsResponse.detections[0].bbox[3] - detectionsResponse.detections[0].bbox[1]) / 1080) * 100}%`
-            }
-          });
+          console.log('🔍 Last detection sample:', detectionsResponse.detections[detectionsResponse.detections.length - 1]);
         }
         
         // Debug: show detections by brand
@@ -116,11 +127,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         
         // Store file info for duration
         if (predictionsResponse.file_info) {
-          console.log('📁 File info:', predictionsResponse.file_info);
-          console.log('📁 File duration_seconds:', predictionsResponse.file_info.duration_seconds);
           setFileInfo(predictionsResponse.file_info);
-        } else {
-          console.log('⚠️ No file_info in predictions response');
         }
         
         console.log('✅ Loaded predictions:', predictionsResponse.predictions);
@@ -152,6 +159,12 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
     return `${(confidence * 100).toFixed(1)}%`;
   };
 
+  const getScoreQuality = (score: number) => {
+    if (score >= 0.8) return 'high';
+    if (score >= 0.6) return 'medium';
+    return 'low';
+  };
+
   // Filter functions for selected logos
   const getSelectedLogoNames = (): string[] => {
     return selectedLogos.map(logo => logo.name);
@@ -177,6 +190,23 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         return words.length > 0 && words[0] === detectedName;
       }
       
+      // Reverse match: if detected name is longer and contains the selected name
+      // This handles cases like "Microsoft" (selected) matching "microsoft" (detected)
+      if (detectedName.length > selectedName.length && detectedName.includes(selectedName)) {
+        const words = detectedName.split(/\s+/);
+        return words.length > 0 && words[0] === selectedName;
+      }
+      
+      // Additional flexible matching for common variations
+      const normalizeName = (name: string) => {
+        return name.replace(/[^a-z0-9]/g, ''); // Remove all non-alphanumeric characters
+      };
+      
+      const normalizedSelected = normalizeName(selectedName);
+      const normalizedDetected = normalizeName(detectedName);
+      
+      if (normalizedSelected === normalizedDetected) return true;
+      
       return false;
     });
   };
@@ -188,29 +218,20 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
     }
   };
 
-  // Frame slider navigation
+  // Frame slider navigation - scroll-based
   const nextFrame = () => {
-    const filteredDetections = detections.filter(detection => {
-      let detectionBrand = (detection as any).brand_name || detection.brands?.name;
-      if (!detectionBrand && detection.brand_id) {
-        const brandIndex = detection.brand_id - 1;
-        if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
-          detectionBrand = result.brands_detected[brandIndex];
-        }
-      }
-      return selectedLogos.length === 0 || selectedLogos.some(logo => 
-        isBrandSelected(detectionBrand || '')
-      );
-    });
-    
-    if (currentFrameIndex < filteredDetections.length - 1) {
-      setCurrentFrameIndex(currentFrameIndex + 1);
+    const container = document.querySelector('.frame-slider-container');
+    if (container) {
+      const scrollAmount = 220; // Width of one frame + gap
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
   };
 
   const prevFrame = () => {
-    if (currentFrameIndex > 0) {
-      setCurrentFrameIndex(currentFrameIndex - 1);
+    const container = document.querySelector('.frame-slider-container');
+    if (container) {
+      const scrollAmount = 220; // Width of one frame + gap
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     }
   };
 
@@ -240,7 +261,21 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
           brandName = result.brands_detected[brandIndex];
         }
       }
-      return isBrandSelected(brandName || '');
+      
+      const isSelected = isBrandSelected(brandName || '');
+      
+      // Специальная отладка для Microsoft
+      if (brandName && brandName.toLowerCase().includes('microsoft')) {
+        console.log('🔍 MICROSOFT FILTER DEBUG:', {
+          detectionId: detection.id,
+          brandName: brandName,
+          isSelected: isSelected,
+          selectedLogos: getSelectedLogoNames(),
+          detection: detection
+        });
+      }
+      
+      return isSelected;
     });
     
     console.log('🔍 Filtering detections:', {
@@ -287,6 +322,63 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   }));
   
   console.log('🎨 ResultsDisplay - brand matching results:', brandMatchingResults);
+  
+  // Debug: Check what brands are actually detected vs selected
+  console.log('🔍 DEBUG - Selected logos:', selectedLogos.map(logo => logo.name));
+  console.log('🔍 DEBUG - Available brands:', result.brands_detected);
+  console.log('🔍 DEBUG - All detections brands:', detections.map(d => {
+    let brand = (d as any).brand_name || d.brands?.name;
+    if (!brand && d.brand_id) {
+      const brandIndex = d.brand_id - 1;
+      if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+        brand = result.brands_detected[brandIndex];
+      }
+    }
+    return brand;
+  }).filter(Boolean));
+  
+  // Special debug for Microsoft
+  const microsoftSelected = selectedLogos.find(logo => logo.name.toLowerCase().includes('microsoft'));
+  const microsoftDetected = result.brands_detected?.find(brand => brand.toLowerCase().includes('microsoft'));
+  const microsoftInDetections = detections.some(d => {
+    let brand = (d as any).brand_name || d.brands?.name;
+    if (!brand && d.brand_id) {
+      const brandIndex = d.brand_id - 1;
+      if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+        brand = result.brands_detected[brandIndex];
+      }
+    }
+    return brand && brand.toLowerCase().includes('microsoft');
+  });
+  
+  console.log('🔍 MICROSOFT DEBUG:', {
+    selected: microsoftSelected,
+    detected: microsoftDetected,
+    inDetections: microsoftInDetections,
+    isSelected: microsoftDetected ? isBrandSelected(microsoftDetected) : false
+  });
+  
+  // Дополнительная отладка для Microsoft детекций
+  const microsoftDetections = detections.filter(d => {
+    let brand = (d as any).brand_name || d.brands?.name;
+    if (!brand && d.brand_id) {
+      const brandIndex = d.brand_id - 1;
+      if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+        brand = result.brands_detected[brandIndex];
+      }
+    }
+    return brand && brand.toLowerCase().includes('microsoft');
+  });
+  
+  console.log('🔍 MICROSOFT DETECTIONS DEBUG:', microsoftDetections.map(d => ({
+    id: d.id,
+    brandName: (d as any).brand_name || d.brands?.name,
+    t_start: d.t_start,
+    t_end: d.t_end,
+    frame: d.frame,
+    score: d.score,
+    bbox: d.bbox
+  })));
 
   return (
     <>
@@ -294,8 +386,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
       <div className="dashboard-content">
         {/* Video Analysis - Full Width */}
         <div className="analysis-card">
-          <h3 className="card-title">
-            <span className="card-icon">📹</span>
+          <h3 className="card-title universal-header">
             Video Analysis
           </h3>
           
@@ -331,24 +422,28 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
 
         {/* Detected Brands - Below Video */}
         <div className="brands-card">
-          <h3 className="card-title">
-            <span className="card-icon">🏷️</span>
+          <h3 className="card-title universal-header">
             Detected Brands
           </h3>
           
-      {result.brands_detected.length > 0 && (
+      {result.brands_detected && result.brands_detected.length > 0 && (
             <div className="brands-list">
             {result.brands_detected
-              .filter(brand => isBrandSelected(brand))
+              .filter(brand => {
+                const isSelected = isBrandSelected(brand);
+                console.log(`🔍 Brand "${brand}" isSelected:`, isSelected);
+                return isSelected;
+              })
                 .map((brand, index) => {
                   const stats = result.statistics?.[brand];
                   // Get logo path for the brand
                   const getLogoPath = (brandName: string) => {
                     const logoMap: { [key: string]: string } = {
                       'Factoria': '/logos/Factoria.jpeg',
-                      'F5': '/logos/F5.jpeg',
+                      'F5': '/logos/F5.jpg',
                       'SomosF5': '/logos/somos F5.jpeg',
                       'Microsoft': '/logos/Microsoft.jpeg',
+                      'FemCoders': '/logos/fem coders.jpeg',
                       'fem coders': '/logos/fem coders.jpeg',
                       'Fundacion Orange': '/logos/Fundacion Orange.jpeg'
                     };
@@ -356,6 +451,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                   };
 
                   const logoPath = getLogoPath(brand);
+                  
+                  // Специальная отладка для FemCoders
+                  if (brand.toLowerCase().includes('femcoders')) {
+                    console.log('🎨 ResultsDisplay: FemCoders brand processing:', {
+                      brand: brand,
+                      logoPath: logoPath,
+                      stats: stats
+                    });
+                  }
                   
                   return (
                     <div key={index} className="brand-item">
@@ -368,11 +472,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                           />
                         ) : (
                           <span>{brand.charAt(0).toUpperCase()}</span>
-                        )}
-                      </div>
+                  )}
+                </div>
                       <div className="brand-details">
                         <div className="brand-name">{brand}</div>
-                </div>
+              </div>
                       <div className="brand-actions">
                         <button
                           className={`brand-toggle ${isBrandSelected(brand) ? 'selected' : ''}`}
@@ -380,26 +484,25 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                         >
                           {isBrandSelected(brand) ? '✓' : '+'}
                         </button>
-                </div>
+          </div>
               </div>
                   );
                 })}
-          </div>
-          )}
+        </div>
+      )}
         </div>
       </div>
 
       {/* Detailed Statistics */}
       {predictions.length > 0 && (
         <div className="statistics-section">
-          <h3>📊 Detailed Statistics</h3>
+          <h3 className="universal-header">Detailed Statistics</h3>
           <div className="statistics-table">
             <div className="table-header">
               <div className="col-brand">Brand</div>
               <div className="col-detections">Detections</div>
               <div className="col-avg-score">Avg Score</div>
               <div className="col-max-score">Max Score</div>
-              <div className="col-duration">Duration (s)</div>
             </div>
             {predictions
               .filter(prediction => {
@@ -411,13 +514,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                 <div key={prediction.id} className="table-row">
                   <div className="col-brand">{prediction.brands?.name || 'Unknown'}</div>
                   <div className="col-detections">{prediction.total_detections || 0}</div>
-                  <div className="col-avg-score">{formatConfidence(prediction.avg_score || 0)}</div>
-                  <div className="col-max-score">{formatConfidence(prediction.max_score || 0)}</div>
-                <div className="col-duration">
-                    {prediction.duration_seconds ? formatDuration(prediction.duration_seconds) : 
-                     prediction.total_seconds ? formatDuration(prediction.total_seconds) : 'N/A'}
+                  <div className="col-avg-score" data-score={getScoreQuality(prediction.avg_score || 0)}>
+                    {formatConfidence(prediction.avg_score || 0)}
+                  </div>
+                  <div className="col-max-score" data-score={getScoreQuality(prediction.max_score || 0)}>
+                    {formatConfidence(prediction.max_score || 0)}
+                  </div>
                 </div>
-              </div>
             ))}
           </div>
         </div>
@@ -456,14 +559,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
       {detections.length > 0 && (
         <div className="frame-captures-section">
           <div className="frame-captures-header">
-            <h3>Frame Captures with Detected Brands</h3>
+            <h3 className="universal-header">Frame Captures with Detected Brands</h3>
           </div>
 
           <div className="frame-slider">
             <button 
               className="slider-btn prev-btn" 
               onClick={prevFrame}
-              disabled={currentFrameIndex === 0}
             >
               ‹
             </button>
@@ -482,7 +584,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                     isBrandSelected(detectionBrand || '')
                   );
                 })
-                .slice(currentFrameIndex, currentFrameIndex + 5)
+
                 .map((detection, index) => {
                   let detectionBrand = (detection as any).brand_name || detection.brands?.name;
                   if (!detectionBrand && detection.brand_id) {
@@ -497,7 +599,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                       <div className="frame-card">
                         <div className="frame-confidence-badge">
                           {formatConfidence(detection.score)}
-                        </div>
+          </div>
                         <div className="frame-image-container">
                           {(detection as any).frame_capture_url ? (
                             <>
@@ -566,15 +668,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                           ) : (
                             <div className="frame-placeholder">
                               <span>📷</span>
-                            </div>
+          </div>
                           )}
-                        </div>
+          </div>
                         <div className="frame-info">
                           <div className="frame-number">Frame {detection.frame}</div>
                           <div className="frame-brand">{detectionBrand}</div>
-                        </div>
-                      </div>
-                    </div>
+        </div>
+      </div>
+    </div>
                   );
                 })}
           </div>
@@ -582,18 +684,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
             <button 
               className="slider-btn next-btn" 
               onClick={nextFrame}
-              disabled={currentFrameIndex >= detections.filter(detection => {
-                let detectionBrand = (detection as any).brand_name || detection.brands?.name;
-                if (!detectionBrand && detection.brand_id) {
-                  const brandIndex = detection.brand_id - 1;
-                  if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
-                    detectionBrand = result.brands_detected[brandIndex];
-                  }
-                }
-                return selectedLogos.length === 0 || selectedLogos.some(logo => 
-                  isBrandSelected(detectionBrand || '')
-                );
-              }).length - 5}
             >
               ›
             </button>
@@ -606,8 +696,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         <TemporalAnalytics 
           detections={detections}
           brandsDetected={result.brands_detected}
-          videoDuration={fileInfo?.duration_seconds}
-          videoFPS={fileInfo?.fps}
+          videoDuration={fileInfo?.duration_seconds || 0}
+          videoFPS={fileInfo?.fps || 30}
         />
       )}
 

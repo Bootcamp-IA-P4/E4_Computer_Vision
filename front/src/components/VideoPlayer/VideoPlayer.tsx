@@ -58,6 +58,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, detections, onTimeU
     });
 
     console.log('🎯 VideoPlayer: Created overlays:', detectionOverlays);
+    
+    // Специальная проверка для Microsoft
+    const microsoftOverlays = detectionOverlays.filter(overlay => 
+      overlay.brandName.toLowerCase().includes('microsoft')
+    );
+    console.log('🎯 VideoPlayer: Microsoft overlays found:', microsoftOverlays);
+    
+    // Специальная отладка для Microsoft временных меток
+    const microsoftDetections = detections.filter(detection => {
+      const brandName = (detection as any).brand_name || detection.brands?.name || 'Unknown';
+      return brandName.toLowerCase().includes('microsoft');
+    });
+    console.log('🎯 VideoPlayer: Microsoft detections with time info:', microsoftDetections.map(d => ({
+      id: d.id,
+      brandName: (d as any).brand_name || d.brands?.name,
+      t_start: d.t_start,
+      t_end: d.t_end,
+      frame: d.frame
+    })));
+    
+    // Сравнение с другими брендами
+    const factoriaDetections = detections.filter(detection => {
+      const brandName = (detection as any).brand_name || detection.brands?.name || 'Unknown';
+      return brandName.toLowerCase().includes('factoria');
+    });
+    console.log('🎯 VideoPlayer: Factoria detections with time info (first 3):', factoriaDetections.slice(0, 3).map(d => ({
+      id: d.id,
+      brandName: (d as any).brand_name || d.brands?.name,
+      t_start: d.t_start,
+      t_end: d.t_end,
+      frame: d.frame
+    })));
+    
     setOverlays(detectionOverlays);
   }, [detections]);
 
@@ -82,6 +115,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, detections, onTimeU
                          detection.t_end !== undefined &&
                          currentTime >= detection.t_start && 
                          currentTime <= detection.t_end;
+
+        // Специальная отладка для Microsoft
+        if (overlay.brandName.toLowerCase().includes('microsoft')) {
+          console.log('🎯 VideoPlayer: Microsoft overlay time check:', {
+            overlayId: overlay.id,
+            brandName: overlay.brandName,
+            currentTime: currentTime.toFixed(2),
+            t_start: detection.t_start,
+            t_end: detection.t_end,
+            isVisible,
+            timeInRange: detection.t_start !== undefined && detection.t_end !== undefined && 
+                        currentTime >= detection.t_start && currentTime <= detection.t_end,
+            wasVisible: overlay.isVisible,
+            timeDifference: detection.t_start !== undefined ? (currentTime - detection.t_start).toFixed(2) : 'N/A',
+            timeToEnd: detection.t_end !== undefined ? (detection.t_end - currentTime).toFixed(2) : 'N/A',
+            hasTimeInfo: detection.t_start !== undefined && detection.t_end !== undefined,
+            timeInfoValid: detection.t_start !== undefined && detection.t_end !== undefined && detection.t_start < detection.t_end
+          });
+        }
+        
+        // Сравнение с другими брендами (только для первых нескольких)
+        if (overlay.brandName.toLowerCase().includes('factoria') && overlay.id <= 3696) {
+          console.log('🎯 VideoPlayer: Factoria overlay time check (for comparison):', {
+            overlayId: overlay.id,
+            brandName: overlay.brandName,
+            currentTime: currentTime.toFixed(2),
+            t_start: detection.t_start,
+            t_end: detection.t_end,
+            isVisible,
+            timeInRange: detection.t_start !== undefined && detection.t_end !== undefined && 
+                        currentTime >= detection.t_start && currentTime <= detection.t_end,
+            wasVisible: overlay.isVisible,
+            hasTimeInfo: detection.t_start !== undefined && detection.t_end !== undefined
+          });
+        }
 
         if (isVisible !== overlay.isVisible) {
           console.log('🎯 VideoPlayer: Overlay visibility changed:', {
@@ -171,6 +239,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, detections, onTimeU
             // Find the corresponding detection for this overlay
             const detection = detections.find(d => d.id === overlay.id);
             
+            // Специальная отладка для Microsoft
+            if (overlay.brandName.toLowerCase().includes('microsoft')) {
+              console.log('🎯 VideoPlayer: Microsoft overlay render check:', {
+                overlayId: overlay.id,
+                brandName: overlay.brandName,
+                isVisible: overlay.isVisible,
+                bbox: overlay.bbox,
+                currentTime: videoRef.current?.currentTime?.toFixed(2),
+                detection: detection,
+                t_start: detection?.t_start,
+                t_end: detection?.t_end
+              });
+            }
+            
             console.log('🎯 VideoPlayer: Rendering overlay:', {
               overlayId: overlay.id,
               brandName: overlay.brandName,
@@ -196,7 +278,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl, detections, onTimeU
             const scaledHeight = (height / originalVideoHeight) * 100;
             
             console.log('🎯 VideoPlayer: Scaled coordinates:', {
-              scaledX, scaledY, scaledWidth, scaledHeight
+              scaledX, scaledY, scaledWidth, scaledHeight,
+              originalBbox: overlay.bbox,
+              originalVideoWidth,
+              originalVideoHeight
             });
 
             // Determine confidence level for styling

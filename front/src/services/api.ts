@@ -60,6 +60,7 @@ export interface DetectionRecord {
   frame: number;
   model: string;
   created_at: string;
+  brand_name?: string; // Added from backend API response
   brands: {
     name: string;
   };

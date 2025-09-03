@@ -9,26 +9,11 @@ import {
   Legend,
   ResponsiveContainer,
   BarChart,
-  Bar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
+  Bar
 } from 'recharts';
 import './TemporalAnalytics.css';
-
-interface DetectionRecord {
-  id: number;
-  frame: number;
-  score: number;
-  bbox: number[];
-  brand_id?: number;
-  brand_name?: string;
-  brands?: { name: string };
-  frame_capture_url?: string;
-  timestamp?: number;
-}
+import { DetectionRecord } from '../../services/api';
+import BrandLogo from '../BrandLogo/BrandLogo';
 
 interface TemporalAnalyticsProps {
   detections: DetectionRecord[];
@@ -51,12 +36,16 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
     console.log('🎬 TemporalAnalytics props updated:', {
       detectionsCount: detections.length,
       brandsDetected,
-      videoDuration
+      videoDuration,
+      videoFPS
     });
-  }, [detections, brandsDetected, videoDuration]);
+  }, [detections, brandsDetected, videoDuration, videoFPS]);
 
   // Calculate temporal analytics
   const analytics = useMemo(() => {
+    console.log('🎬 TemporalAnalytics - detections received:', detections.length);
+    console.log('🎬 TemporalAnalytics - first detection sample:', detections[0]);
+    
     if (!detections.length) return null;
 
     // Group detections by brand and time
@@ -64,35 +53,48 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
     
     // Use actual FPS from video or default to 30
     const actualFPS = videoFPS || 30;
-    const frameToTime = (frame: number) => (frame / actualFPS) * 1000; // Convert to milliseconds
+    // IMPORTANT: frame numbers in database are indices of extracted frames (1 FPS), not original video frames
+    // So frame 0 = 0 seconds, frame 1 = 1 second, frame 2 = 2 seconds, etc.
+    const frameToTime = (frame: number) => frame * 1000; // Convert frame index directly to milliseconds (1 frame = 1 second)
 
     detections.forEach(detection => {
+      // API returns brand_name directly, not in brands.name structure
       let brandName = detection.brand_name || detection.brands?.name || 'Unknown';
+      console.log('🎬 TemporalAnalytics - processing detection:', {
+        id: detection.id,
+        brandName,
+        brand_name: detection.brand_name,
+        brands: detection.brands,
+        hasBrands: !!detection.brands,
+        brandsName: detection.brands?.name
+      });
+      
       if (!brandTimeline[brandName]) {
         brandTimeline[brandName] = [];
       }
+      const timestamp = frameToTime(detection.frame);
       brandTimeline[brandName].push({
         frame: detection.frame,
-        timestamp: frameToTime(detection.frame),
+        timestamp: timestamp,
         score: detection.score
       });
     });
 
+
+
     // Calculate video duration first
     const maxTime = Math.max(...detections.map(d => frameToTime(d.frame))) / 1000;
+    // Use videoDuration from props if available and > 0, otherwise use maxTime from detections
     const videoDurationSeconds = (videoDuration && videoDuration > 0) ? videoDuration : maxTime;
+    
 
-    // Calculate duration for each brand
+
+    // Calculate duration for each brand (each detection = 1 second since TARGET_FPS = 1)
     const brandDurations: { [brand: string]: number } = {};
     Object.keys(brandTimeline).forEach(brand => {
       const detections = brandTimeline[brand];
-      if (detections.length > 1) {
-        const sortedDetections = detections.sort((a, b) => a.timestamp - b.timestamp);
-        const totalDuration = sortedDetections[sortedDetections.length - 1].timestamp - sortedDetections[0].timestamp;
-        brandDurations[brand] = totalDuration;
-      } else {
-        brandDurations[brand] = 0;
-      }
+      // Each detection represents 1 second of display time
+      brandDurations[brand] = detections.length;
     });
 
     // Calculate frequency (detections per second)
@@ -104,24 +106,15 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
     });
 
     // Find peak moments (frames with most brands)
-    const frameBrandCount: { [frame: number]: number } = {};
-    detections.forEach(detection => {
-      frameBrandCount[detection.frame] = (frameBrandCount[detection.frame] || 0) + 1;
-    });
+
     
-    const peakFrames = Object.entries(frameBrandCount)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([frame, count]) => ({ frame: parseInt(frame), count }));
-    
-    // Debug logging
-    console.log('🎬 TemporalAnalytics - videoDuration from props:', videoDuration);
-    console.log('🎬 TemporalAnalytics - maxTime from detections:', maxTime);
-    console.log('🎬 TemporalAnalytics - final videoDurationSeconds:', videoDurationSeconds);
+
     
     // Prepare data for charts - use videoDurationSeconds for proper time intervals
     const timeIntervals = Math.max(10, Math.ceil(videoDurationSeconds / 10)); // At least 10 intervals, or 1 per 10 seconds
     const intervalSize = videoDurationSeconds / timeIntervals;
+    
+
 
     // Line chart data for detection intensity over time
     const lineChartData = [];
@@ -143,15 +136,11 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
       lineChartData.push(dataPoint);
     }
 
-    // Radar chart data for detection intensity
-    const radarData = Object.keys(brandTimeline).map(brand => {
-      const detections = brandTimeline[brand];
-      const intensity = Math.min(4, Math.max(0, detections.length / 10)); // Scale to 0-4 range
-      return {
-        brand,
-        intensity: Math.round(intensity * 10) / 10 // Round to 1 decimal
-      };
-    });
+
+    
+
+
+
 
     // Bar chart data for detection frequency
     const barChartData = Object.keys(brandTimeline).map(brand => ({
@@ -159,18 +148,25 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
       frequency: brandFrequencies[brand]
     }));
 
+    // Bar chart data for top brands by display time
+    const topBrandsData = Object.entries(brandDurations)
+      .sort(([,a], [,b]) => b - a) // Sort by duration descending
+      .map(([brand, duration]) => ({
+        brand,
+        duration
+      }));
+
     return {
       brandTimeline,
       brandDurations,
       brandFrequencies,
-      peakFrames,
       totalDetections: detections.length,
       lineChartData,
-      radarData,
       barChartData,
+      topBrandsData,
       videoDurationSeconds
     };
-  }, [detections, videoDuration]);
+  }, [detections, videoDuration, videoFPS]);
 
   const formatTime = (milliseconds: number) => {
     const seconds = Math.floor(milliseconds / 1000);
@@ -192,7 +188,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
         className="temporal-analytics-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3>📊 Temporal Analytics</h3>
+        <h3 className="universal-header">Temporal Analytics</h3>
         <div className="expand-icon">
           {isExpanded ? '▼' : '▶'}
         </div>
@@ -204,7 +200,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
 
           {/* Detection Timeline Line Chart */}
           <div className="analytics-card">
-            <h4>📈 Detection Timeline</h4>
+            <h4 className="universal-header">Detection Timeline</h4>
             <div className="chart-container">
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={analytics.lineChartData}>
@@ -241,57 +237,165 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
 
           {/* Charts Grid */}
           <div className="analytics-charts-grid">
-            {/* Detection Intensity - Radar Chart */}
-            <div className="analytics-card">
-              <h4>🎯 Detection Intensity</h4>
+
+
+            {/* Detection Frequency - Professional Bar Chart */}
+            <div className="analytics-card professional-chart">
+              <div className="chart-header">
+                <h4 className="universal-header">Detection Frequency</h4>
+                <div className="chart-subtitle">Brands detection rate per second</div>
+              </div>
               <div className="chart-container">
-                <ResponsiveContainer width="100%" height={250}>
-                  <RadarChart data={analytics.radarData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="brand" tick={{ fontSize: 12 }} />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, 4]}
-                      tick={{ fontSize: 10 }}
-                      tickCount={5}
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart 
+                    data={analytics.barChartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <defs>
+                      <linearGradient id="frequencyGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4a2c7a" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#8b4a8b" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="#e2e8f0" 
+                      strokeOpacity={0.6}
                     />
-                    <Radar
-                      name="Detection Intensity"
-                      dataKey="intensity"
-                      stroke="#3b82f6"
-                      fill="#3b82f6"
-                      fillOpacity={0.6}
+                    <XAxis 
+                      dataKey="brand" 
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
                     />
-                  </RadarChart>
+                    <YAxis 
+                      label={{ 
+                        value: 'Detection Rate (per sec)', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle', fill: '#64748b', fontSize: '12px' }
+                      }}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
+                      tickFormatter={(value) => value.toFixed(2)}
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                        fontSize: '13px'
+                      }}
+                      formatter={(value: any) => [
+                        `${Number(value).toFixed(3)} detections/sec`, 
+                        'Detection Rate'
+                      ]}
+                      labelStyle={{ 
+                        color: '#374151', 
+                        fontWeight: 600,
+                        marginBottom: '4px'
+                      }}
+                    />
+                    <Bar 
+                      dataKey="frequency" 
+                      fill="url(#frequencyGradient)"
+                      radius={[6, 6, 0, 0]}
+                      stroke="#4a2c7a"
+                      strokeWidth={1}
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Detection Frequency - Bar Chart */}
-            <div className="analytics-card">
-              <h4>📊 Detection Frequency</h4>
+            {/* Top Brands by Display Time - Professional Bar Chart */}
+            <div className="analytics-card professional-chart">
+              <div className="chart-header">
+                <h4 className="universal-header">Top Brands by Display Time</h4>
+                <div className="chart-subtitle">Brands ranked by total display time</div>
+              </div>
               <div className="chart-container">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={analytics.barChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart 
+                    data={analytics.topBrandsData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <defs>
+                      <linearGradient id="durationGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4a2c7a" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#8b4a8b" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="#e2e8f0" 
+                      strokeOpacity={0.6}
+                    />
                     <XAxis 
                       dataKey="brand" 
-                      tick={{ fontSize: 12 }}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
                       angle={-45}
                       textAnchor="end"
-                      height={60}
+                      height={70}
                     />
                     <YAxis 
-                      label={{ value: 'Frequency (det/sec)', angle: -90, position: 'insideLeft' }}
-                      tick={{ fontSize: 12 }}
+                      label={{ 
+                        value: 'Tiempo de Exhibición (seg)', 
+                        angle: -90, 
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle', fill: '#64748b', fontSize: '12px' }
+                      }}
+                      tick={{ 
+                        fontSize: 11, 
+                        fill: '#64748b',
+                        fontWeight: 500
+                      }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
                     />
                     <Tooltip 
-                      formatter={(value: any) => [`${Number(value).toFixed(2)}/sec`, 'Frequency']}
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                        fontSize: '13px'
+                      }}
+                      formatter={(value: any) => [
+                        `${value} segundos`, 
+                        'Tiempo de Exhibición'
+                      ]}
+                      labelStyle={{ 
+                        color: '#374151', 
+                        fontWeight: 600,
+                        marginBottom: '4px'
+                      }}
                     />
                     <Bar 
-                      dataKey="frequency" 
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
+                      dataKey="duration" 
+                      fill="url(#durationGradient)"
+                      radius={[6, 6, 0, 0]}
+                      stroke="#4a2c7a"
+                      strokeWidth={1}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -299,23 +403,13 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
             </div>
           </div>
 
-          {/* Peak Moments */}
-          <div className="analytics-card">
-            <h4>🔥 Peak Moments</h4>
-            <div className="peak-moments-grid">
-              {analytics.peakFrames.map((peak, index) => (
-                <div key={index} className="peak-moment-card">
-                  <div className="peak-frame">Frame {peak.frame}</div>
-                  <div className="peak-count">{peak.count} brands detected</div>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Summary Statistics */}
-          <div className="analytics-stats-grid">
+
+          {/* Analytics Sections */}
+          <div className="analytics-sections-grid">
+            {/* Summary Section */}
             <div className="analytics-card">
-              <h4>📋 Summary</h4>
+              <h4 className="universal-header">Summary</h4>
               <div className="stats-list">
                 <div className="stat-item">
                   <span className="stat-label">Total Detections</span>
@@ -329,6 +423,36 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
                   <span className="stat-label">Video Duration</span>
                   <span className="stat-value">{formatTime(analytics.videoDurationSeconds * 1000)}</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Brand Duration Section */}
+            <div className="analytics-card">
+              <h4 className="universal-header">Brand Duration</h4>
+              <div className="stats-list">
+                {Object.entries(analytics.brandDurations).map(([brand, duration]) => (
+                  <div key={brand} className="stat-item">
+                    <div className="stat-logo-container">
+                      <BrandLogo brandName={brand} size="large" />
+                    </div>
+                    <span className="stat-value">{formatTime(duration * 1000)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Detection Frequency Section */}
+            <div className="analytics-card">
+              <h4 className="universal-header">Detection Frequency</h4>
+              <div className="stats-list">
+                {Object.entries(analytics.brandFrequencies).map(([brand, frequency]) => (
+                  <div key={brand} className="stat-item">
+                    <div className="stat-logo-container">
+                      <BrandLogo brandName={brand} size="large" />
+                    </div>
+                    <span className="stat-value">{frequency.toFixed(2)}/sec</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
