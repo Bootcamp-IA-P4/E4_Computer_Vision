@@ -99,7 +99,7 @@ test_*.jpeg
 
 # FastAPI specific
 .fastapi_cache/
-=======
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
