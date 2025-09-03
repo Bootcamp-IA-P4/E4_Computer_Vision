@@ -33,10 +33,16 @@ chmod +x setup.sh
 ```env
 SUPABASE_URL=tu_url_de_supabase
 SUPABASE_SERVICE_ROLE=tu_clave_de_service_role
-SUPABASE_KEY=tu_key
 ```
 
-### 4. Ejecutar el Servidor
+### 4. Configurar Base de Datos
+1. Ve a tu proyecto en Supabase
+2. Ejecuta el script `setup/database_schema.sql` en el SQL Editor
+3. Crea los buckets de almacenamiento:
+   - `images` (para imágenes y crops)
+   - `videos` (para archivos de video)
+
+### 5. Ejecutar el Servidor
 
 **Windows:**
 ```cmd
