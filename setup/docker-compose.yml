@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  logo-detection-api:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
+      - SUPABASE_IMAGES_BUCKET=${SUPABASE_IMAGES_BUCKET}
+      - SUPABASE_VIDEOS_BUCKET=${SUPABASE_VIDEOS_BUCKET}
+    volumes:
+      - ./temp:/app/temp
+      - ./best.pt:/app/best.pt:ro
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
