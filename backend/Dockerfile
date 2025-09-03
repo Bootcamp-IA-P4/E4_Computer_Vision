@@ -7,18 +7,19 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgl1-mesa-glx \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Copiar requirements e instalar dependencias Python
-COPY setup/requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código completo del backend
-COPY . .
 
+# Copiar el backend y main.py
+COPY backend ./backend
+COPY main.py .
 # Crear directorios necesarios (aunque también se crean en el código)
 RUN mkdir -p temp/uploads temp/frames temp/crops
 
