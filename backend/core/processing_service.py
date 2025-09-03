@@ -59,8 +59,12 @@ class ProcessingService:
                 if frame is None:
                     continue
                 
-                # Get frame timestamp
+                # Get frame timestamp - делаем детекции более точными по времени
                 t_start, t_end = video_processor.get_frame_timestamp(frame_idx, TARGET_FPS)
+                
+                # Уменьшаем длительность показа детекции для более точной синхронизации
+                detection_duration = 0.5  # Показываем детекцию 0.5 секунды
+                t_end = t_start + detection_duration
                 
                 # Detect objects in frame
                 detections = yolo_processor.detect_objects(frame)
@@ -135,10 +139,13 @@ class ProcessingService:
             # Insert predictions
             prediction_ids = []
             for brand_name, stats in brand_stats.items():
+                logger.info(f"🔄 Processing brand: {brand_name}, stats: {stats}")
                 brand_id = await supabase_client.get_or_create_brand(brand_name)
+
                 prediction_data = stats_calculator.prepare_prediction_data(
                     stats, brand_id, file_id, video_info['duration_seconds']
                 )
+
                 prediction_id = await supabase_client.insert_prediction(prediction_data)
                 prediction_ids.append(prediction_id)
             
