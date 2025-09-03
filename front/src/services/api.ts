@@ -119,6 +119,9 @@ class ApiService {
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    
+    console.log('🌐 API: Starting upload to /upload-async');
+    console.log('📁 File details:', { name: file.name, size: file.size, type: file.type });
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -132,18 +135,25 @@ class ApiService {
       });
 
       xhr.addEventListener('load', () => {
+        console.log('📡 API: Upload response status:', xhr.status);
+        console.log('📡 API: Upload response text:', xhr.responseText);
+        
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const response = JSON.parse(xhr.responseText);
+            console.log('✅ API: Upload successful, response:', response);
             resolve(response);
           } catch (error) {
+            console.error('❌ API: Invalid response format:', error);
             reject(new Error('Invalid response format'));
           }
         } else {
           try {
             const error = JSON.parse(xhr.responseText);
+            console.error('❌ API: Upload failed with error:', error);
             reject(new Error(error.detail || 'Upload failed'));
           } catch {
+            console.error('❌ API: Upload failed with status:', xhr.status);
             reject(new Error(`Upload failed with status ${xhr.status}`));
           }
         }
@@ -153,7 +163,7 @@ class ApiService {
         reject(new Error('Network error during upload'));
       });
 
-      xhr.open('POST', `${this.baseUrl}/upload`);
+      xhr.open('POST', `${this.baseUrl}/upload-async`);
       xhr.send(formData);
     });
   }

@@ -50,8 +50,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     setUploadedFiles(prev => [...prev, videoFile]);
 
     try {
+      console.log('🚀 Starting upload for file:', fileId, file.name);
       // Upload file to backend with progress tracking
       const response = await apiService.uploadFile(file, (progress) => {
+        console.log('📊 Upload progress:', progress + '%');
         setUploadedFiles(prev => 
           prev.map(f => 
             f.id === fileId 
@@ -60,6 +62,8 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
           )
         );
       });
+      
+      console.log('📡 Upload response:', response);
 
       // Update file with session ID and mark as uploaded
       setUploadedFiles(prev => 
@@ -74,10 +78,16 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
             : f
         )
       );
+      
+      console.log('✅ File status updated to uploaded:', fileId);
 
       console.log('✅ File uploaded successfully:', response);
     } catch (error) {
       console.error('❌ Upload failed:', error);
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setUploadedFiles(prev => 
         prev.map(f => 
           f.id === fileId 
@@ -131,7 +141,9 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
   }, []);
 
   const handleContinue = useCallback(() => {
-    const validFiles = uploadedFiles.filter(f => f.status === 'uploaded');
+    console.log('🔍 Current uploaded files:', uploadedFiles.map(f => ({ id: f.id, name: f.name, status: f.status })));
+    const validFiles = uploadedFiles.filter(f => f.status === 'uploaded' || f.status === 'processing');
+    console.log('✅ Valid files for continue:', validFiles.map(f => ({ id: f.id, name: f.name, status: f.status })));
     if (validFiles.length > 0) {
       onVideoUpload(validFiles);
     }
@@ -234,9 +246,9 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
               <button 
                 className="continue-btn"
                 onClick={handleContinue}
-                disabled={uploadedFiles.filter(f => f.status === 'uploaded').length === 0}
+                disabled={uploadedFiles.filter(f => f.status === 'uploaded' || f.status === 'processing').length === 0}
               >
-                Continue with {uploadedFiles.filter(f => f.status === 'uploaded').length} File(s)
+                Continue with {uploadedFiles.filter(f => f.status === 'uploaded' || f.status === 'processing').length} File(s)
               </button>
             </div>
           </div>
