@@ -65,6 +65,10 @@ class StatisticsCalculator:
                 
                 avg_score = stats['total_score'] / stats['total_detections'] if stats['total_detections'] > 0 else 0.0
                 
+                # Ensure total_seconds is never None or negative
+                if total_seconds is None or total_seconds < 0:
+                    total_seconds = 0
+                
                 final_stats[brand_name] = {
                     'total_detections': stats['total_detections'],
                     'avg_score': round(avg_score, 3),
@@ -74,6 +78,7 @@ class StatisticsCalculator:
                     'first_detection_time': round(stats['first_detection_time'], 2) if stats['first_detection_time'] is not None else None,
                     'last_detection_time': round(stats['last_detection_time'], 2) if stats['last_detection_time'] is not None else None,
                     'frames_with_detection': frames_count
+
                 }
             
             return final_stats
@@ -87,6 +92,7 @@ class StatisticsCalculator:
         Prepare prediction data for database insertion matching the enhanced predictions table schema
         """
         try:
+
             # Calculate percentage based on duration_seconds and video duration
             total_seconds = brand_stats.get('duration_seconds', 0.0)
             percentage = 0.0
@@ -108,7 +114,11 @@ class StatisticsCalculator:
                 'duration_seconds': brand_stats['duration_seconds'],
                 'first_detection_time': brand_stats['first_detection_time'],
                 'last_detection_time': brand_stats['last_detection_time']
+
             }
+            
+            logger.info(f"📊 Prepared prediction data: {prediction_data}")
+            return prediction_data
         except Exception as e:
             logger.error(f"Error preparing prediction data: {e}")
             return {}

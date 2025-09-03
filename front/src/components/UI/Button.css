@@ -1,0 +1,143 @@
+.btn {
+  font-family: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.025em;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+/* Размеры */
+.btn-sm {
+  padding: 10px 20px;
+  font-size: 14px;
+  min-height: 40px;
+}
+
+.btn-md {
+  padding: 14px 28px;
+  font-size: 16px;
+  min-height: 48px;
+}
+
+.btn-lg {
+  padding: 18px 36px;
+  font-size: 18px;
+  min-height: 56px;
+}
+
+/* Варианты */
+.btn-primary {
+  background: linear-gradient(135deg, #c13584 0%, #833ab4 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(196, 53, 132, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-primary:hover:not(.btn-disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(196, 53, 132, 0.4);
+  background: linear-gradient(135deg, #d6418a 0%, #8f42c0 100%);
+}
+
+.btn-primary:active:not(.btn-disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(196, 53, 132, 0.3);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.95);
+  color: #c13584;
+  border: 2px solid #c13584;
+  box-shadow: 0 4px 15px rgba(196, 53, 132, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover:not(.btn-disabled) {
+  background: #c13584;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(196, 53, 132, 0.3);
+}
+
+.btn-secondary:active:not(.btn-disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-danger:hover:not(.btn-disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(255, 107, 107, 0.4);
+  background: linear-gradient(135deg, #ff7b7b 0%, #ff6b6b 100%);
+}
+
+.btn-danger:active:not(.btn-disabled) {
+  transform: translateY(-1px);
+}
+
+/* Состояние disabled */
+.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-disabled::before {
+  display: none;
+}
+
+/* Эффект нажатия */
+.btn:active:not(.btn-disabled) {
+  transform: translateY(-1px);
+}
+
+/* Фокус для доступности */
+.btn:focus {
+  outline: 2px solid #c13584;
+  outline-offset: 2px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .btn-md {
+    padding: 12px 24px;
+    font-size: 15px;
+    min-height: 44px;
+  }
+  
+  .btn-lg {
+    padding: 16px 32px;
+    font-size: 17px;
+    min-height: 52px;
+  }
+}
