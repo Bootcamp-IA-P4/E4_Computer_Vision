@@ -259,57 +259,6 @@ async def upload_file_async(background_tasks: BackgroundTasks, file: UploadFile 
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/start-processing/{session_id}")
-async def start_processing(background_tasks: BackgroundTasks, session_id: str):
-    """Start processing for an uploaded file"""
-    try:
-        # Find the uploaded file
-        temp_dir = os.path.join(UPLOAD_DIR, session_id)
-        if not os.path.exists(temp_dir):
-            raise HTTPException(status_code=404, detail="Session not found")
-        
-        # Find the file in the session directory
-        files = os.listdir(temp_dir)
-        if not files:
-            raise HTTPException(status_code=404, detail="No file found for this session")
-        
-        filename = files[0]  # Assume single file per session
-        temp_file_path = os.path.join(temp_dir, filename)
-        
-        # Get content type based on file extension
-        file_extension = Path(filename).suffix.lower()
-        if file_extension in SUPPORTED_VIDEO_FORMATS:
-            content_type = "video/" + file_extension[1:]
-        elif file_extension in SUPPORTED_IMAGE_FORMATS:
-            content_type = "image/" + file_extension[1:]
-        else:
-            content_type = "application/octet-stream"
-        
-        # Start processing in background
-        background_tasks.add_task(
-            process_media_file, 
-            temp_file_path, 
-            filename, 
-            content_type,
-            session_id
-        )
-        
-        return JSONResponse(content={
-            "message": "Processing started",
-            "session_id": session_id,
-
-            "filename": file.filename,
-            "file_size": file.size,
-            "file_type": "video" if file_extension in SUPPORTED_VIDEO_FORMATS else "image",
-            "status_endpoint": f"/upload-result/{session_id}",
-            "detailed_status_endpoint": f"/processing-status/{session_id}"
-
-        })
-        
-    except Exception as e:
-        logger.error(f"Error starting processing: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/start-processing/{session_id}")
 async def start_processing(session_id: str, background_tasks: BackgroundTasks):
     """Start processing for uploaded file after logo selection"""
     try:
