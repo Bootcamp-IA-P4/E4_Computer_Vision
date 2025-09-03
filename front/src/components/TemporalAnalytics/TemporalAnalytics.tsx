@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -34,15 +34,26 @@ interface TemporalAnalyticsProps {
   detections: DetectionRecord[];
   brandsDetected: string[];
   videoDuration?: number;
+  videoFPS?: number;
 }
 
 const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({ 
   detections, 
   brandsDetected, 
-  videoDuration = 0 
+  videoDuration = 0,
+  videoFPS = 30
 }) => {
-  const [selectedBrand, setSelectedBrand] = useState<string>('all');
+
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Log props changes
+  useEffect(() => {
+    console.log('🎬 TemporalAnalytics props updated:', {
+      detectionsCount: detections.length,
+      brandsDetected,
+      videoDuration
+    });
+  }, [detections, brandsDetected, videoDuration]);
 
   // Calculate temporal analytics
   const analytics = useMemo(() => {
@@ -50,7 +61,10 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
 
     // Group detections by brand and time
     const brandTimeline: { [brand: string]: { frame: number; timestamp: number; score: number }[] } = {};
-    const frameToTime = (frame: number) => (frame / 30) * 1000; // Assuming 30 FPS, convert to milliseconds
+    
+    // Use actual FPS from video or default to 30
+    const actualFPS = videoFPS || 30;
+    const frameToTime = (frame: number) => (frame / actualFPS) * 1000; // Convert to milliseconds
 
     detections.forEach(detection => {
       let brandName = detection.brand_name || detection.brands?.name || 'Unknown';
@@ -63,6 +77,10 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
         score: detection.score
       });
     });
+
+    // Calculate video duration first
+    const maxTime = Math.max(...detections.map(d => frameToTime(d.frame))) / 1000;
+    const videoDurationSeconds = (videoDuration && videoDuration > 0) ? videoDuration : maxTime;
 
     // Calculate duration for each brand
     const brandDurations: { [brand: string]: number } = {};
@@ -81,7 +99,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
     const brandFrequencies: { [brand: string]: number } = {};
     Object.keys(brandTimeline).forEach(brand => {
       const detections = brandTimeline[brand];
-      const timeSpan = videoDuration > 0 ? videoDuration : Math.max(...detections.map(d => d.timestamp)) / 1000;
+      const timeSpan = videoDurationSeconds; // Use the calculated video duration
       brandFrequencies[brand] = detections.length / timeSpan;
     });
 
@@ -95,11 +113,15 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5)
       .map(([frame, count]) => ({ frame: parseInt(frame), count }));
-
-    // Prepare data for charts
-    const maxTime = Math.max(...detections.map(d => frameToTime(d.frame))) / 1000;
-    const timeIntervals = 10; // 10-second intervals
-    const intervalSize = maxTime / timeIntervals;
+    
+    // Debug logging
+    console.log('🎬 TemporalAnalytics - videoDuration from props:', videoDuration);
+    console.log('🎬 TemporalAnalytics - maxTime from detections:', maxTime);
+    console.log('🎬 TemporalAnalytics - final videoDurationSeconds:', videoDurationSeconds);
+    
+    // Prepare data for charts - use videoDurationSeconds for proper time intervals
+    const timeIntervals = Math.max(10, Math.ceil(videoDurationSeconds / 10)); // At least 10 intervals, or 1 per 10 seconds
+    const intervalSize = videoDurationSeconds / timeIntervals;
 
     // Line chart data for detection intensity over time
     const lineChartData = [];
@@ -121,11 +143,15 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
       lineChartData.push(dataPoint);
     }
 
-    // Radar chart data for brand exposure
-    const radarData = Object.keys(brandTimeline).map(brand => ({
-      brand,
-      exposure: Math.round(brandDurations[brand] / 1000) // Convert to seconds
-    }));
+    // Radar chart data for detection intensity
+    const radarData = Object.keys(brandTimeline).map(brand => {
+      const detections = brandTimeline[brand];
+      const intensity = Math.min(4, Math.max(0, detections.length / 10)); // Scale to 0-4 range
+      return {
+        brand,
+        intensity: Math.round(intensity * 10) / 10 // Round to 1 decimal
+      };
+    });
 
     // Bar chart data for detection frequency
     const barChartData = Object.keys(brandTimeline).map(brand => ({
@@ -141,7 +167,8 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
       totalDetections: detections.length,
       lineChartData,
       radarData,
-      barChartData
+      barChartData,
+      videoDurationSeconds
     };
   }, [detections, videoDuration]);
 
@@ -173,20 +200,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
 
       {isExpanded && (
         <div className="temporal-analytics-content">
-          {/* Brand Selection */}
-          <div className="brand-selector">
-            <label>Select Brand:</label>
-            <select 
-              value={selectedBrand} 
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="brand-select"
-            >
-              <option value="all">All Brands</option>
-              {brandsDetected.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
-              ))}
-            </select>
-          </div>
+
 
           {/* Detection Timeline Line Chart */}
           <div className="analytics-card">
@@ -227,9 +241,9 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
 
           {/* Charts Grid */}
           <div className="analytics-charts-grid">
-            {/* Brand Exposure Time - Radar Chart */}
+            {/* Detection Intensity - Radar Chart */}
             <div className="analytics-card">
-              <h4>⏳ Brand Exposure Time</h4>
+              <h4>🎯 Detection Intensity</h4>
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height={250}>
                   <RadarChart data={analytics.radarData}>
@@ -237,24 +251,25 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
                     <PolarAngleAxis dataKey="brand" tick={{ fontSize: 12 }} />
                     <PolarRadiusAxis 
                       angle={90} 
-                      domain={[0, Math.max(...analytics.radarData.map(d => d.exposure))]}
+                      domain={[0, 4]}
                       tick={{ fontSize: 10 }}
+                      tickCount={5}
                     />
                     <Radar
-                      name="Exposure Time (sec)"
-                      dataKey="exposure"
+                      name="Detection Intensity"
+                      dataKey="intensity"
                       stroke="#3b82f6"
                       fill="#3b82f6"
-                      fillOpacity={0.3}
+                      fillOpacity={0.6}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Detection Intensity - Bar Chart */}
+            {/* Detection Frequency - Bar Chart */}
             <div className="analytics-card">
-              <h4>🔧 Detection Intensity</h4>
+              <h4>📊 Detection Frequency</h4>
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={analytics.barChartData}>
@@ -312,7 +327,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Video Duration</span>
-                  <span className="stat-value">{formatTime(videoDuration * 1000)}</span>
+                  <span className="stat-value">{formatTime(analytics.videoDurationSeconds * 1000)}</span>
                 </div>
               </div>
             </div>

@@ -1,5 +1,30 @@
 /* LogoVision Dashboard Styles */
 
+/* Logo Header */
+.logo-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 40px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.main-logo {
+  max-height: 50px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: -0.025em;
+}
+
 /* Hide scrollbars */
 * {
   scrollbar-width: none; /* Firefox */
@@ -86,22 +111,24 @@ body, html {
   align-items: center;
   gap: 15px;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #c13584 0%, #833ab4 100%);
   border-radius: 15px;
   color: white;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(196, 53, 132, 0.3);
+  min-height: 120px;
 }
 
 .brand-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 25px rgba(196, 53, 132, 0.4);
 }
 
 .brand-icon {
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
+  width: 50%;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,6 +136,15 @@ body, html {
   font-weight: 700;
   color: white;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.brand-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 15px;
 }
 
 .brand-details {
@@ -466,8 +502,8 @@ body, html {
   }
   
   .brand-icon {
-    width: 40px;
-    height: 40px;
+    width: 50%;
+    height: 60px;
     font-size: 1.2rem;
   }
   

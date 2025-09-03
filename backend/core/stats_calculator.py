@@ -91,6 +91,8 @@ class StatisticsCalculator:
                 'max_score': brand_stats.get('max_score', 0.0),
                 'min_score': brand_stats.get('min_score', 0.0),
                 'duration_seconds': total_seconds,  # Используем название из схемы БД
+                'total_seconds': total_seconds,  # Добавляем для совместимости с БД
+                'percentage': percentage,  # Добавляем процент
                 'first_detection_time': 0,  # TODO: Calculate from detections
                 'last_detection_time': total_seconds
             }

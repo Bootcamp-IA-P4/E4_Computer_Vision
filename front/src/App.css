@@ -1,7 +1,15 @@
+/* Global styles */
+body, html {
+  background: white !important;
+  margin: 0;
+  padding: 0;
+}
+
 .app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: white;
 }
 
 /* Современный header в темном стиле */
@@ -38,39 +46,30 @@
   z-index: 2;
 }
 
-/* Feature Badge */
-.feature-badge {
+/* Logo Header Container */
+.logo-header-container {
   position: relative;
   z-index: 10;
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #c13584 0%, #833ab4 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50px;
-  padding: 12px 24px;
+  width: 100%;
   margin-bottom: 2rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: white;
+  padding: 0 2rem;
+}
+
+.main-header-logo {
+  max-width: 100%;
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 25px rgba(196, 53, 132, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.3));
 }
 
-.feature-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(196, 53, 132, 0.4);
-}
-
-.badge-icon {
-  font-size: 1rem;
-}
-
-.badge-text {
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+.logo-header-container:hover .main-header-logo {
+  transform: scale(1.02);
+  filter: drop-shadow(0 8px 30px rgba(0, 0, 0, 0.4));
 }
 
 /* App Title */
@@ -128,6 +127,78 @@
   justify-content: center;
   gap: 3rem;
   margin-top: 3rem;
+}
+
+.logo-stat-container {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-stat-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(196, 53, 132, 0.1) 0%, rgba(131, 58, 180, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.logo-stat-container:hover::before {
+  opacity: 1;
+}
+
+.logo-stat-container:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.hero-logo {
+  max-height: 80px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1) drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.logo-stat-container:hover .hero-logo {
+  filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(196, 53, 132, 0.5));
+  transform: scale(1.05);
+}
+
+.stat-content {
+  position: relative;
+  z-index: 2;
+}
+
+.stat-content .stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #c13584;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px rgba(196, 53, 132, 0.3);
+}
+
+.stat-content .stat-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .hero-stats .stat-item {
@@ -289,13 +360,12 @@
 
 /* Step Content */
 .step-content {
-  max-width: 900px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .step-section {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
+  background: white !important;
   border-radius: 20px;
   padding: 2.5rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
@@ -523,19 +593,50 @@
 
 /* Footer */
 .app-footer {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  overflow: hidden;
   padding: 2rem 0 1rem 0;
+  width: 100%;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(196, 53, 132, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(131, 58, 180, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(196, 53, 132, 0.1) 0%, transparent 50%);
+  z-index: 1;
+}
+
+.app-footer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  z-index: 2;
 }
 
 .footer-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem auto;
   flex-wrap: wrap;
   gap: 2rem;
+  position: relative;
+  z-index: 10;
+  color: white;
+  width: 80%;
+  text-align: center;
 }
 
 .footer-brand h4 {
@@ -556,14 +657,27 @@
 }
 
 .footer-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: white !important;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-  color: white;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Дополнительные стили для ссылок в футере */
+.app-footer a {
+  color: white !important;
+}
+
+.app-footer a:visited {
+  color: white !important;
+}
+
+.app-footer a:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .footer-bottom {
@@ -671,21 +785,25 @@
 
 /* Основная часть */
 .main-content {
-  background: white;
+  background: white !important;
   margin-top: 0;
   padding-top: 2rem;
   min-height: 100vh;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 1;
 }
 
 /* Step Content */
 .step-content {
-  max-width: 900px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .step-section {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
+  background: white !important;
   border-radius: 20px;
   padding: 2.5rem;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
@@ -913,19 +1031,50 @@
 
 /* Footer */
 .app-footer {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  overflow: hidden;
   padding: 2rem 0 1rem 0;
+  width: 100%;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(196, 53, 132, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(131, 58, 180, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(196, 53, 132, 0.1) 0%, transparent 50%);
+  z-index: 1;
+}
+
+.app-footer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  z-index: 2;
 }
 
 .footer-content {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 2rem;
+  margin: 0 auto 2rem auto;
   flex-wrap: wrap;
   gap: 2rem;
+  position: relative;
+  z-index: 10;
+  color: white;
+  width: 80%;
+  text-align: center;
 }
 
 .footer-brand h4 {
@@ -946,14 +1095,27 @@
 }
 
 .footer-link {
-  color: rgba(255, 255, 255, 0.7);
+  color: white !important;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s ease;
 }
 
 .footer-link:hover {
-  color: white;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Дополнительные стили для ссылок в футере */
+.app-footer a {
+  color: white !important;
+}
+
+.app-footer a:visited {
+  color: white !important;
+}
+
+.app-footer a:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .footer-bottom {

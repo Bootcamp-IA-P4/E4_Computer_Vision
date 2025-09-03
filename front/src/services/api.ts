@@ -240,13 +240,61 @@ class ApiService {
   }
 
   // Get predictions for a file
-  async getPredictions(fileId: number): Promise<{ predictions: PredictionRecord[] }> {
+  async getPredictions(fileId: number): Promise<{ 
+    predictions: PredictionRecord[], 
+    file_info?: { 
+      id: number, 
+      filename: string, 
+      file_type: string, 
+      duration_seconds?: number, 
+      fps?: number 
+    } 
+  }> {
     const response = await fetch(`${this.baseUrl}/predictions/${fileId}`);
     
     if (!response.ok) {
       throw new Error('Failed to get predictions');
     }
 
+    return response.json();
+  }
+
+  async getFileStatistics(fileId: number): Promise<{
+    file_info: {
+      id: number;
+      filename: string;
+      file_type: string;
+      duration_seconds?: number;
+      fps?: number;
+      created_at: string;
+    };
+    video_statistics: {
+      total_duration_seconds: number;
+      total_detections: number;
+      unique_brands: number;
+      average_confidence: number;
+      total_detection_time: number;
+      detection_density: number;
+      detection_coverage: number;
+    };
+    brand_distribution: {
+      [brandName: string]: {
+        detections: number;
+        total_time: number;
+        avg_confidence: number;
+      };
+    };
+    temporal_distribution: {
+      [timeInterval: string]: number;
+    };
+    detections: DetectionRecord[];
+    predictions: PredictionRecord[];
+  }> {
+    const response = await fetch(`${this.baseUrl}/files/${fileId}/statistics`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to get file statistics');
+    }
     return response.json();
   }
 

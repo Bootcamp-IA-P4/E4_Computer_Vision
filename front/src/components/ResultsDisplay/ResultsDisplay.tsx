@@ -4,6 +4,7 @@ import { ProcessingResult, DetectionRecord, apiService } from '../../services/ap
 import VideoPlayer from '../VideoPlayer/VideoPlayer';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import TemporalAnalytics from '../TemporalAnalytics/TemporalAnalytics';
+
 import { Logo } from '../../types';
 
 interface ResultsDisplayProps {
@@ -19,6 +20,15 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
+  const [fileInfo, setFileInfo] = useState<{ duration_seconds?: number; fps?: number } | null>(null);
+
+  // Log fileInfo changes
+  useEffect(() => {
+    console.log('🎬 FileInfo updated:', fileInfo);
+    if (fileInfo) {
+      console.log('🎬 Video duration from fileInfo:', fileInfo.duration_seconds);
+    }
+  }, [fileInfo]);
 
   console.log('🎨 ResultsDisplay render with result:', result);
   console.log('🎨 ResultsDisplay - result.detections_count:', result.detections_count);
@@ -103,6 +113,16 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         console.log('🔍 Loading predictions for file_id:', result.file_id);
         const predictionsResponse = await apiService.getPredictions(result.file_id);
         setPredictions(predictionsResponse.predictions);
+        
+        // Store file info for duration
+        if (predictionsResponse.file_info) {
+          console.log('📁 File info:', predictionsResponse.file_info);
+          console.log('📁 File duration_seconds:', predictionsResponse.file_info.duration_seconds);
+          setFileInfo(predictionsResponse.file_info);
+        } else {
+          console.log('⚠️ No file_info in predictions response');
+        }
+        
         console.log('✅ Loaded predictions:', predictionsResponse.predictions);
         console.log('📊 Predictions data structure:', predictionsResponse.predictions.map(p => ({
           id: p.id,
@@ -270,9 +290,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
 
   return (
     <>
-
-
-            {/* Main Content - Full Width Video */}
+      {/* Main Content - Full Width Video */}
       <div className="dashboard-content">
         {/* Video Analysis - Full Width */}
         <div className="analysis-card">
@@ -324,19 +342,36 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
               .filter(brand => isBrandSelected(brand))
                 .map((brand, index) => {
                   const stats = result.statistics?.[brand];
-                  const avgScore = stats?.avg_score || 0;
-                  const maxScore = stats?.max_score || 0;
+                  // Get logo path for the brand
+                  const getLogoPath = (brandName: string) => {
+                    const logoMap: { [key: string]: string } = {
+                      'Factoria': '/logos/Factoria.jpeg',
+                      'F5': '/logos/F5.jpeg',
+                      'SomosF5': '/logos/somos F5.jpeg',
+                      'Microsoft': '/logos/Microsoft.jpeg',
+                      'fem coders': '/logos/fem coders.jpeg',
+                      'Fundacion Orange': '/logos/Fundacion Orange.jpeg'
+                    };
+                    return logoMap[brandName] || null;
+                  };
+
+                  const logoPath = getLogoPath(brand);
                   
                   return (
                     <div key={index} className="brand-item">
                       <div className="brand-icon">
-                        <span>{brand.charAt(0).toUpperCase()}</span>
+                        {logoPath ? (
+                          <img 
+                            src={logoPath} 
+                            alt={brand} 
+                            className="brand-logo"
+                          />
+                        ) : (
+                          <span>{brand.charAt(0).toUpperCase()}</span>
+                        )}
                       </div>
                       <div className="brand-details">
                         <div className="brand-name">{brand}</div>
-                        <div className="brand-stats">
-                          Average: {(avgScore * 100).toFixed(1)}% | Max: {(maxScore * 100).toFixed(1)}%
-                        </div>
                 </div>
                       <div className="brand-actions">
                         <button
@@ -571,9 +606,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         <TemporalAnalytics 
           detections={detections}
           brandsDetected={result.brands_detected}
-          videoDuration={undefined}
+          videoDuration={fileInfo?.duration_seconds}
+          videoFPS={fileInfo?.fps}
         />
       )}
+
     </>
   );
 };

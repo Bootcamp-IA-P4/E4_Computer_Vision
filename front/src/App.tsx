@@ -118,23 +118,18 @@ function App() {
         <div className="header-decoration bottom-left"></div>
         <div className="header-decoration center"></div>
         
-        <div className="feature-badge">
-          <span className="badge-icon"></span>
-          <span className="badge-text">LOREM IPSUM</span>
+        <div className="logo-header-container">
+          <img 
+            src="/logos/Logo-vision-pro-1-B.png" 
+            alt="LogoVision Pro" 
+            className="main-header-logo"
+          />
         </div>
         
         <h1 className="app-title">LogoVision Pro</h1>
         <p className="app-subtitle">Advanced AI-powered logo detection and analysis platform</p>
         
         <div className="hero-stats">
-          <div className="stat-item">
-            <div className="stat-number">99.8%</div>
-            <div className="stat-label">Accuracy</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">50+</div>
-            <div className="stat-label">Logo Types</div>
-          </div>
           <div className="stat-item">
             <div className="stat-number">24/7</div>
             <div className="stat-label">Processing</div>
