@@ -48,10 +48,13 @@ class SupabaseClient:
     async def insert_prediction(self, prediction_data: dict) -> int:
         """Insert prediction record"""
         try:
+            logger.info(f"🗄️ Inserting prediction data: {prediction_data}")
             response = self.client.table('predictions').insert(prediction_data).execute()
+            logger.info(f"✅ Prediction inserted successfully with ID: {response.data[0]['id']}")
             return response.data[0]['id']
         except Exception as e:
-            logger.error(f"Error inserting prediction: {e}")
+            logger.error(f"❌ Error inserting prediction: {e}")
+            logger.error(f"❌ Prediction data that failed: {prediction_data}")
             raise
     
     async def get_or_create_brand(self, brand_name: str) -> int:

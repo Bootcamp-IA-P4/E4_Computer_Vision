@@ -1,0 +1,273 @@
+.logo-selector {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.selector-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.selector-header h2 {
+  color: #2d3748;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #c13584 0%, #833ab4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.selector-description {
+  color: #718096;
+  font-size: 1.125rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.selection-info {
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: inline-block;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.selection-info .count {
+  color: #c13584;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.selector-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.logos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.logo-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #c13584 0%, #833ab4 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.logo-card:hover {
+  border-color: #c13584;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(196, 53, 132, 0.15);
+}
+
+.logo-card:hover::before {
+  transform: scaleX(1);
+}
+
+.logo-card.selected {
+  border-color: #c13584;
+  background: linear-gradient(135deg, #fdf2f8 0%, #f8fafc 100%);
+  box-shadow: 0 8px 25px rgba(196, 53, 132, 0.2);
+}
+
+.logo-card.selected::before {
+  transform: scaleX(1);
+}
+
+.logo-icon {
+  width: 90%;
+  height: 90%;
+  padding: 8px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.logo-card:hover .logo-icon {
+  border-color: #c13584;
+  background: linear-gradient(135deg, rgba(196, 53, 132, 0.1) 0%, rgba(131, 58, 180, 0.1) 100%);
+}
+
+.logo-card.selected .logo-icon {
+  border-color: #c13584;
+  background: linear-gradient(135deg, rgba(196, 53, 132, 0.15) 0%, rgba(131, 58, 180, 0.15) 100%);
+}
+
+/* Стили для изображений логотипов */
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.logo-card:hover .logo-image {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.logo-card.selected .logo-image {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(196, 53, 132, 0.2);
+}
+
+/* Fallback эмодзи - скрываем по умолчанию */
+.logo-emoji {
+  font-size: 3rem;
+  color: #c13584;
+  display: none;
+}
+
+/* Показываем эмодзи только если изображение не загрузилось */
+.logo-card:has(.logo-image:not([src])) .logo-emoji,
+.logo-card:has(.logo-image[src=""]) .logo-emoji {
+  display: block;
+}
+
+.logo-card:hover .logo-emoji {
+  transform: scale(1.1);
+}
+
+.logo-card.selected .logo-emoji {
+  transform: scale(1.15);
+}
+
+.logo-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.logo-card.selected .logo-name {
+  color: #c13584;
+  font-weight: 700;
+}
+
+.logo-checkbox {
+  font-size: 1.5rem;
+  margin-top: auto;
+  transition: all 0.3s ease;
+}
+
+.logo-card.selected .logo-checkbox {
+  transform: scale(1.1);
+}
+
+/* Индикатор статуса загрузки */
+.image-status {
+  display: none;
+}
+
+.selector-footer {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Анимация появления */
+.logo-card {
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.logo-card:nth-child(1) { animation-delay: 0.1s; }
+.logo-card:nth-child(2) { animation-delay: 0.2s; }
+.logo-card:nth-child(3) { animation-delay: 0.3s; }
+.logo-card:nth-child(4) { animation-delay: 0.4s; }
+.logo-card:nth-child(5) { animation-delay: 0.5s; }
+.logo-card:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .logos-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .logo-card {
+    padding: 1.25rem;
+    min-height: 180px;
+  }
+  
+  .logo-icon {
+    width: 85%;
+    height: 85%;
+    padding: 6px;
+    border-radius: 12px;
+  }
+  
+  .logo-image {
+    border-radius: 8px;
+  }
+  
+  .logo-emoji {
+    font-size: 2.5rem;
+  }
+  
+  .logo-name {
+    font-size: 0.9rem;
+  }
+  
+  .selector-controls {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .image-status {
+    top: 5px;
+    right: 5px;
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}

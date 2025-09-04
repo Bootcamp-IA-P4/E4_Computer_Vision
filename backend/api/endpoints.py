@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from database.supabase_client import supabase_client
+from backend.database.supabase_client import supabase_client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,14 +84,30 @@ async def get_detections(file_id: int):
 
 @router.get("/predictions/{file_id}")
 async def get_predictions(file_id: int):
-    """Get all predictions for a file"""
+    """Get all predictions for a file with file information"""
     try:
-        response = supabase_client.client.table('predictions')\
-            .select('*, brands!inner(name)')\
+        # Get predictions
+        predictions_response = supabase_client.client.table('predictions')\
+            .select('*, brands(name)')\
             .eq('video_id', file_id)\
             .execute()
         
-        return {"predictions": response.data}
+        # Get file information including duration
+        file_response = supabase_client.client.table('files')\
+            .select('id, filename, file_type, duration_seconds, fps')\
+            .eq('id', file_id)\
+            .execute()
+        
+        file_info = file_response.data[0] if file_response.data else None
+        
+        # Ensure duration_seconds is not None
+        if file_info and file_info.get('duration_seconds') is None:
+            file_info['duration_seconds'] = 0
+        
+        return {
+            "predictions": predictions_response.data,
+            "file_info": file_info
+        }
     except Exception as e:
         logger.error(f"Error getting predictions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -108,122 +124,6 @@ async def get_files():
         return {"files": response.data}
     except Exception as e:
         logger.error(f"Error getting files: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/frame-captures/{file_id}")
-async def get_frame_captures(file_id: int):
-    """Get all frame captures for a file"""
-    try:
-        response = supabase_client.client.table('frame_captures')\
-            .select('*')\
-            .eq('file_id', file_id)\
-            .order('frame_number')\
-            .execute()
-        
-        return {"frame_captures": response.data}
-    except Exception as e:
-        logger.error(f"Error getting frame captures: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/frame-captures")
-async def get_all_frame_captures():
-    """Get all frame captures"""
-    try:
-        response = supabase_client.client.table('frame_captures')\
-            .select('*')\
-            .order('created_at', desc=True)\
-            .execute()
-        
-        return {"frame_captures": response.data}
-    except Exception as e:
-        logger.error(f"Error getting all frame captures: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/stats")
-async def get_dashboard_stats():
-    """Get overall dashboard statistics"""
-    try:
-        # Get total files count
-        files_response = supabase_client.client.table('files')\
-            .select('id', count='exact')\
-            .execute()
-        total_files = files_response.count or 0
-        
-        # Get total detections count
-        detections_response = supabase_client.client.table('detections')\
-            .select('id', count='exact')\
-            .execute()
-        total_detections = detections_response.count or 0
-        
-        # Get unique brands count
-        brands_response = supabase_client.client.table('brands')\
-            .select('id', count='exact')\
-            .execute()
-        total_brands = brands_response.count or 0
-        
-        # Get recent uploads (last 7 days)
-        from datetime import datetime, timedelta
-        seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
-        recent_files_response = supabase_client.client.table('files')\
-            .select('id', count='exact')\
-            .gte('created_at', seven_days_ago)\
-            .execute()
-        recent_uploads = recent_files_response.count or 0
-        
-        return {
-            "total_files": total_files,
-            "total_detections": total_detections,
-            "total_brands": total_brands,
-            "recent_uploads": recent_uploads
-        }
-    except Exception as e:
-        logger.error(f"Error getting dashboard stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/brand-stats")
-async def get_brand_stats():
-    """Get brand statistics for dashboard"""
-    try:
-        # Get brands with their detection counts and average confidence
-        # Join detections with brands to get brand names
-        response = supabase_client.client.table('detections')\
-            .select('''
-                score,
-                brands!inner(name)
-            ''')\
-            .execute()
-        
-        # Process the data to calculate statistics per brand
-        brand_stats = {}
-        for detection in response.data:
-            if detection['brands'] and detection['brands']['name']:
-                brand_name = detection['brands']['name']
-                score = detection['score']
-                
-                if brand_name not in brand_stats:
-                    brand_stats[brand_name] = {
-                        'detection_count': 0,
-                        'total_confidence': 0.0
-                    }
-                
-                brand_stats[brand_name]['detection_count'] += 1
-                brand_stats[brand_name]['total_confidence'] += float(score)
-        
-        # Calculate averages and format response
-        brands = []
-        for brand_name, stats in brand_stats.items():
-            brands.append({
-                'brand_name': brand_name,
-                'detection_count': stats['detection_count'],
-                'confidence_avg': stats['total_confidence'] / stats['detection_count']
-            })
-        
-        # Sort by detection count (descending)
-        brands.sort(key=lambda x: x['detection_count'], reverse=True)
-        
-        return {"brands": brands}
-    except Exception as e:
-        logger.error(f"Error getting brand stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/files/{file_id}/statistics")
@@ -320,4 +220,33 @@ async def get_file_statistics(file_id: int):
         
     except Exception as e:
         logger.error(f"Error getting file statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/frame-captures/{file_id}")
+async def get_frame_captures(file_id: int):
+    """Get all frame captures for a file"""
+    try:
+        response = supabase_client.client.table('frame_captures')\
+            .select('*')\
+            .eq('file_id', file_id)\
+            .order('frame_number')\
+            .execute()
+        
+        return {"frame_captures": response.data}
+    except Exception as e:
+        logger.error(f"Error getting frame captures: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/frame-captures")
+async def get_all_frame_captures():
+    """Get all frame captures"""
+    try:
+        response = supabase_client.client.table('frame_captures')\
+            .select('*')\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        return {"frame_captures": response.data}
+    except Exception as e:
+        logger.error(f"Error getting all frame captures: {e}")
         raise HTTPException(status_code=500, detail=str(e))
