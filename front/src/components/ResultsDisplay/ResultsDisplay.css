@@ -815,12 +815,13 @@ body, html {
   border: none;
 }
 
-/* Frame Slider */
-.frame-slider {
-  display: flex;
-  align-items: center;
+/* Frame Grid */
+.frame-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
   margin-top: 20px;
+  padding: 10px 0;
 }
 
 .slider-btn {
@@ -837,6 +838,8 @@ body, html {
   justify-content: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(74, 44, 122, 0.3);
+  z-index: 1000;
+  position: relative;
 }
 
 .slider-btn:hover:not(:disabled) {
@@ -854,14 +857,23 @@ body, html {
 .frame-slider-container {
   display: flex;
   gap: 15px;
-  overflow-x: auto;
+  overflow: hidden; /* Hide overflow for transform approach */
   flex: 1;
   padding: 10px 0;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  /* Support for transform approach */
+  transition: transform 0.3s ease;
+  /* Ensure container can be transformed */
+  position: relative;
 }
 
-.frame-slide {
-  flex-shrink: 0;
-  width: 200px;
+.frame-item {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
 }
 
 .frame-card {

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ResultsDisplay.css';
 import { ProcessingResult, DetectionRecord, apiService } from '../../services/api';
 import VideoPlayer from '../VideoPlayer/VideoPlayer';
 import BrandLogo from '../BrandLogo/BrandLogo';
 import TemporalAnalytics from '../TemporalAnalytics/TemporalAnalytics';
+import ImageModal from '../UI/ImageModal/ImageModal';
 
 import { Logo } from '../../types';
 
@@ -21,6 +22,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   const [predictions, setPredictions] = useState<any[]>([]);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ duration_seconds?: number; fps?: number } | null>(null);
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<DetectionRecord | null>(null);
+  const [currentModalIndex, setCurrentModalIndex] = useState(0);
 
   // Log fileInfo changes
   useEffect(() => {
@@ -78,6 +84,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   useEffect(() => {
     const loadData = async () => {
       if (!result.file_id) return;
+      
+      // Removed slider reset code
       
       // Load detections
       setLoadingDetections(true);
@@ -218,21 +226,74 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
     }
   };
 
-  // Frame slider navigation - scroll-based
-  const nextFrame = () => {
-    const container = document.querySelector('.frame-slider-container');
-    if (container) {
-      const scrollAmount = 220; // Width of one frame + gap
-      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
+
+
+  // Alternative approach using transform
+  // Removed slider navigation state
+  
+  // Removed nextFrameTransform function
+  
+  // Removed all slider navigation functions
+
+  // Modal functions
+  const openModal = (detection: DetectionRecord) => {
+    console.log('🖼️ Opening modal for detection:', detection);
+    setModalImage(detection);
+    
+    // Calculate current index in filtered detections
+    const filteredDetections = detections.filter(det => {
+      let detectionBrand = (det as any).brand_name || det.brands?.name;
+      if (!detectionBrand && det.brand_id) {
+        const brandIndex = det.brand_id - 1;
+        if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+          detectionBrand = result.brands_detected[brandIndex];
+        }
+      }
+      return selectedLogos.length === 0 || selectedLogos.some(logo => 
+        isBrandSelected(detectionBrand || '')
+      );
+    });
+    
+    const currentIndex = filteredDetections.findIndex(det => det.id === detection.id);
+    setCurrentModalIndex(currentIndex);
+    setIsModalOpen(true);
   };
 
-  const prevFrame = () => {
-    const container = document.querySelector('.frame-slider-container');
-    if (container) {
-      const scrollAmount = 220; // Width of one frame + gap
-      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  const closeModal = () => {
+    console.log('🖼️ Closing modal');
+    setIsModalOpen(false);
+    setModalImage(null);
+    setCurrentModalIndex(0);
+  };
+
+  const navigateModal = (direction: 'prev' | 'next') => {
+    console.log('🖼️ Modal navigation:', direction);
+    
+    // Get filtered detections for navigation
+    const filteredDetections = detections.filter(detection => {
+      let detectionBrand = (detection as any).brand_name || detection.brands?.name;
+      if (!detectionBrand && detection.brand_id) {
+        const brandIndex = detection.brand_id - 1;
+        if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+          detectionBrand = result.brands_detected[brandIndex];
+        }
+      }
+      return selectedLogos.length === 0 || selectedLogos.some(logo => 
+        isBrandSelected(detectionBrand || '')
+      );
+    });
+
+    if (filteredDetections.length === 0) return;
+
+    let newIndex = currentModalIndex;
+    if (direction === 'next') {
+      newIndex = (currentModalIndex + 1) % filteredDetections.length;
+    } else {
+      newIndex = currentModalIndex === 0 ? filteredDetections.length - 1 : currentModalIndex - 1;
     }
+
+    setCurrentModalIndex(newIndex);
+    setModalImage(filteredDetections[newIndex]);
   };
 
   const filterStatisticsBySelectedLogos = (statistics: any) => {
@@ -383,7 +444,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
   return (
     <>
       {/* Main Content - Full Width Video */}
-      <div className="dashboard-content">
+      <div className="dashboard-content" data-file-id={result.file_id}>
         {/* Video Analysis - Full Width */}
         <div className="analysis-card">
           <h3 className="card-title universal-header">
@@ -516,11 +577,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                   <div className="col-detections">{prediction.total_detections || 0}</div>
                   <div className="col-avg-score" data-score={getScoreQuality(prediction.avg_score || 0)}>
                     {formatConfidence(prediction.avg_score || 0)}
-                  </div>
+            </div>
                   <div className="col-max-score" data-score={getScoreQuality(prediction.max_score || 0)}>
                     {formatConfidence(prediction.max_score || 0)}
-                  </div>
                 </div>
+              </div>
             ))}
           </div>
         </div>
@@ -557,20 +618,31 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
 
       {/* Frame Captures Section */}
       {detections.length > 0 && (
-        <div className="frame-captures-section">
+        <div className="frame-captures-section" data-file-id={result.file_id}>
           <div className="frame-captures-header">
             <h3 className="universal-header">Frame Captures with Detected Brands</h3>
           </div>
 
-          <div className="frame-slider">
-            <button 
-              className="slider-btn prev-btn" 
-              onClick={prevFrame}
-            >
-              ‹
-            </button>
-            
-            <div className="frame-slider-container">
+          <div style={{
+            fontSize: '12px',
+            color: '#666',
+            marginBottom: '15px'
+          }}>
+            Total: {detections.filter(detection => {
+              let detectionBrand = (detection as any).brand_name || detection.brands?.name;
+              if (!detectionBrand && detection.brand_id) {
+                const brandIndex = detection.brand_id - 1;
+                if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+                  detectionBrand = result.brands_detected[brandIndex];
+                }
+              }
+              return selectedLogos.length === 0 || selectedLogos.some(logo => 
+                isBrandSelected(detectionBrand || '')
+              );
+            }).length} frames
+          </div>
+
+          <div className="frame-grid">
               {detections
                 .filter(detection => {
                   let detectionBrand = (detection as any).brand_name || detection.brands?.name;
@@ -595,7 +667,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                   }
                   
                   return (
-                    <div key={index} className="frame-slide">
+                    <div key={index} className="frame-item">
                       <div className="frame-card">
                         <div className="frame-confidence-badge">
                           {formatConfidence(detection.score)}
@@ -607,6 +679,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                                 src={(detection as any).frame_capture_url}
                                 alt={`Frame ${detection.frame} - ${detectionBrand}`}
                                 className="frame-slide-image"
+                                onClick={() => openModal(detection)}
+                                style={{ cursor: 'pointer' }}
                                 onLoad={(e) => {
                                   const img = e.currentTarget;
                                   const container = img.parentElement;
@@ -680,14 +754,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                   );
                 })}
           </div>
-            
-            <button 
-              className="slider-btn next-btn" 
-              onClick={nextFrame}
-            >
-              ›
-            </button>
-          </div>
         </div>
       )}
 
@@ -698,6 +764,44 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
           brandsDetected={result.brands_detected}
           videoDuration={fileInfo?.duration_seconds || 0}
           videoFPS={fileInfo?.fps || 30}
+        />
+      )}
+
+      {/* Image Modal */}
+      {modalImage && (
+        <ImageModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          imageUrl={(modalImage as any).frame_capture_url || ''}
+          title={`Frame ${modalImage.frame}`}
+          subtitle={`Video ID: ${result.file_id}`}
+          confidence={modalImage.score}
+          frameNumber={modalImage.frame}
+          brandName={(() => {
+            let brandName = (modalImage as any).brand_name || modalImage.brands?.name;
+            if (!brandName && modalImage.brand_id) {
+              const brandIndex = modalImage.brand_id - 1;
+              if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+                brandName = result.brands_detected[brandIndex];
+              }
+            }
+            return brandName;
+          })()}
+          bbox={modalImage.bbox}
+          currentIndex={currentModalIndex}
+          totalCount={detections.filter(detection => {
+            let detectionBrand = (detection as any).brand_name || detection.brands?.name;
+            if (!detectionBrand && detection.brand_id) {
+              const brandIndex = detection.brand_id - 1;
+              if (brandIndex >= 0 && brandIndex < result.brands_detected.length) {
+                detectionBrand = result.brands_detected[brandIndex];
+              }
+            }
+            return selectedLogos.length === 0 || selectedLogos.some(logo => 
+              isBrandSelected(detectionBrand || '')
+            );
+          }).length}
+          onNavigate={navigateModal}
         />
       )}
 
