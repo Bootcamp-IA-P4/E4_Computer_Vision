@@ -384,7 +384,7 @@ body, html {
 
 .table-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   gap: 20px;
   padding: 24px 28px;
   background: linear-gradient(135deg, #4a2c7a 0%, #6b3a8b 50%, #8b4a8b 100%);
@@ -413,14 +413,16 @@ body, html {
 /* Force white color for header columns */
 .table-header .col-brand,
 .table-header .col-detections,
+.table-header .col-visibility,
 .table-header .col-avg-score,
-.table-header .col-max-score {
+.table-header .col-max-score,
+.table-header .col-min-score {
   color: white !important;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
   gap: 20px;
   padding: 20px 28px;
   background: white;
@@ -472,8 +474,10 @@ body, html {
   position: relative;
 }
 
+.col-visibility,
 .col-avg-score,
-.col-max-score {
+.col-max-score,
+.col-min-score {
   font-weight: 600;
   color: #2d3748;
   font-size: 1rem;
@@ -487,11 +491,12 @@ body, html {
 
 /* Score indicators */
 .col-avg-score,
-.col-max-score {
+.col-max-score,
+.col-min-score {
   position: relative;
 }
 
-.col-detections::after,
+.col-min-score::after,
 .col-avg-score::after {
   content: '';
   position: absolute;
@@ -528,14 +533,15 @@ body, html {
   transition: all 0.3s ease;
 }
 
-.table-row:hover .col-detections::after,
+.table-row:hover .col-min-score::after,
 .table-row:hover .col-avg-score::after {
   opacity: 0.8;
 }
 
 /* Score quality indicators */
 .col-avg-score[data-score="high"]::before,
-.col-max-score[data-score="high"]::before {
+.col-max-score[data-score="high"]::before,
+.col-min-score[data-score="high"]::before {
   content: '●';
   margin-right: 8px;
   font-size: 1.2rem;
@@ -544,7 +550,8 @@ body, html {
 }
 
 .col-avg-score[data-score="medium"]::before,
-.col-max-score[data-score="medium"]::before {
+.col-max-score[data-score="medium"]::before,
+.col-min-score[data-score="medium"]::before {
   content: '●';
   margin-right: 8px;
   font-size: 1.2rem;
@@ -553,7 +560,8 @@ body, html {
 }
 
 .col-avg-score[data-score="low"]::before,
-.col-max-score[data-score="low"]::before {
+.col-max-score[data-score="low"]::before,
+.col-min-score[data-score="low"]::before {
   content: '●';
   margin-right: 8px;
   font-size: 1.2rem;
@@ -608,7 +616,8 @@ body, html {
 .table-row:nth-child(5) { animation-delay: 0.5s; }
 
 .table-row:hover .col-avg-score[data-score="high"]::before,
-.table-row:hover .col-max-score[data-score="high"]::before {
+.table-row:hover .col-max-score[data-score="high"]::before,
+.table-row:hover .col-min-score[data-score="high"]::before {
   animation: pulse 1s ease-in-out infinite;
 }
 

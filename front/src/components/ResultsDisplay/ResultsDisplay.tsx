@@ -559,12 +559,14 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         <div className="statistics-section">
           <h3 className="universal-header">Detailed Statistics</h3>
           <div className="statistics-table">
-            <div className="table-header">
-              <div className="col-brand">Brand</div>
-              <div className="col-detections">Detections</div>
-              <div className="col-avg-score">Avg Score</div>
-              <div className="col-max-score">Max Score</div>
-            </div>
+                         <div className="table-header">
+               <div className="col-brand">Brand</div>
+               <div className="col-detections">Detections</div>
+               <div className="col-visibility">Visibility</div>
+               <div className="col-min-score">Min Score</div>
+               <div className="col-avg-score">Avg Score</div>
+               <div className="col-max-score">Max Score</div>
+             </div>
             {predictions
               .filter(prediction => {
                 if (!selectedLogos.length) return true;
@@ -572,16 +574,30 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
                 return selectedLogos.some(logo => isBrandSelected(brandName));
               })
               .map((prediction: any) => (
-                <div key={prediction.id} className="table-row">
-                  <div className="col-brand">{prediction.brands?.name || 'Unknown'}</div>
-                  <div className="col-detections">{prediction.total_detections || 0}</div>
-                  <div className="col-avg-score" data-score={getScoreQuality(prediction.avg_score || 0)}>
-                    {formatConfidence(prediction.avg_score || 0)}
-            </div>
-                  <div className="col-max-score" data-score={getScoreQuality(prediction.max_score || 0)}>
-                    {formatConfidence(prediction.max_score || 0)}
-                </div>
-              </div>
+                                 <div key={prediction.id} className="table-row">
+                   <div className="col-brand">{prediction.brands?.name || 'Unknown'}</div>
+                   <div className="col-detections">{prediction.total_detections || 0}</div>
+                   <div className="col-visibility">
+                     {(() => {
+                       const totalDuration = fileInfo?.duration_seconds || 0;
+                       const brandDuration = prediction.duration_seconds || 0;
+                       if (totalDuration > 0) {
+                         const visibilityRatio = (brandDuration / totalDuration) * 100;
+                         return `${visibilityRatio.toFixed(1)}%`;
+                       }
+                       return 'N/A';
+                     })()}
+                   </div>
+                   <div className="col-min-score" data-score={getScoreQuality(prediction.min_score || 0)}>
+                     {formatConfidence(prediction.min_score || 0)}
+                   </div>
+                   <div className="col-avg-score" data-score={getScoreQuality(prediction.avg_score || 0)}>
+                     {formatConfidence(prediction.avg_score || 0)}
+                   </div>
+                   <div className="col-max-score" data-score={getScoreQuality(prediction.max_score || 0)}>
+                     {formatConfidence(prediction.max_score || 0)}
+                   </div>
+                 </div>
             ))}
           </div>
         </div>

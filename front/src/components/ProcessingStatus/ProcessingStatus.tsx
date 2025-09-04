@@ -114,7 +114,7 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ sessionId, onComple
     <div className="processing-status">
       <div className="status-container">
         <div className="status-header">
-          <h3>🔄 Processing Status</h3>
+          <h3>🔄 Processing</h3>
           {getStatusMessage() && (
             <p className="status-message">{getStatusMessage()}</p>
           )}

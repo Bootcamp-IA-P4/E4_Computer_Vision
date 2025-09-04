@@ -7,6 +7,8 @@ import ProcessingStatus from './components/ProcessingStatus/ProcessingStatus';
 import ResultsDisplay from './components/ResultsDisplay/ResultsDisplay';
 import { MediaFile, Logo } from './types';
 import { ProcessingResult, apiService } from './services/api';
+import { SimplePDFGenerator } from './components/PDFReport/SimplePDFGenerator';
+import { AdvancedPDFGenerator } from './components/PDFReport/AdvancedPDFGenerator';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'select' | 'process' | 'results'>('upload');
@@ -186,24 +188,74 @@ function App() {
     setCurrentProcessingIndex(0);
   };
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     if (processingResults.length === 0) return;
     
-    // For now, just show an alert. In a real implementation, this would generate and download a PDF report
-    const reportData = {
-      totalVideos: processingResults.length,
-      totalDetections: processingResults.reduce((sum, result) => sum + (result.detections?.length || result.detections_count || 0), 0),
-      totalBrands: processingResults.reduce((sum, result) => sum + (result.brands_detected?.length || 0), 0),
-      videos: processingResults.map((result, index) => ({
-        videoNumber: index + 1,
-        fileId: result.file_id,
-        detections: result.detections?.length || result.detections_count || 0,
-        brands: result.brands_detected?.join(', ') || 'None'
-      }))
-    };
-    
-    console.log('📊 Report data:', reportData);
-    alert(`Отчет будет загружен!\n\nОбработано видео: ${reportData.totalVideos}\nВсего обнаружений: ${reportData.totalDetections}\nВсего брендов: ${reportData.totalBrands}`);
+    try {
+      // Показываем индикатор загрузки
+      console.log('📊 Generating report...');
+      
+      // Загружаем дополнительные данные для каждого файла
+      const enrichedResults = await Promise.all(
+        processingResults.map(async (result) => {
+          try {
+            // Загружаем predictions и temporal analytics для каждого файла
+            const [predictionsResponse, detectionsResponse] = await Promise.all([
+              apiService.getPredictions(result.file_id).catch(() => ({ predictions: [], file_info: null })),
+              apiService.getDetections(result.file_id).catch(() => ({ detections: [] }))
+            ]);
+            
+            return {
+              ...result,
+              predictions: predictionsResponse.predictions || [],
+              temporal_analytics: predictionsResponse.predictions || [], // Используем predictions как temporal data
+              detections: detectionsResponse.detections || result.detections || [],
+              file_info: predictionsResponse.file_info
+            };
+          } catch (error) {
+            console.warn(`Failed to load additional data for file ${result.file_id}:`, error);
+            return result;
+          }
+        })
+      );
+      
+      // Предлагаем пользователю выбор формата
+      const formatChoice = window.confirm(
+        'Выберите формат отчета:\n\n' +
+        'OK - Настоящий PDF файл (рекомендуется)\n' +
+        'Отмена - HTML отчет для печати'
+      );
+      
+      if (formatChoice) {
+        // Генерируем настоящий PDF
+        const reportData = AdvancedPDFGenerator.createReportData(enrichedResults, currentSessionId || undefined);
+        const pdfGenerator = AdvancedPDFGenerator.getInstance();
+        await pdfGenerator.generatePDFReport(reportData);
+        console.log('✅ PDF report generated successfully');
+      } else {
+        // Генерируем HTML отчет
+        const reportData = SimplePDFGenerator.createReportData(enrichedResults, currentSessionId || undefined);
+        const htmlGenerator = SimplePDFGenerator.getInstance();
+        
+        // Предлагаем выбор: открыть для печати или скачать HTML
+        const htmlChoice = window.confirm(
+          'Выберите действие с HTML отчетом:\n\n' +
+          'OK - Открыть для печати (можно сохранить как PDF)\n' +
+          'Отмена - Скачать HTML файл'
+        );
+        
+        if (htmlChoice) {
+          htmlGenerator.openReportForPrint(reportData);
+        } else {
+          htmlGenerator.downloadHTMLReport(reportData);
+        }
+        console.log('✅ HTML report generated successfully');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error generating report:', error);
+      alert(`Ошибка при генерации отчета: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
   };
 
   // Show loading screen while initializing
@@ -353,9 +405,10 @@ function App() {
                     <button className="btn btn-primary" onClick={resetApp}>
                       {processingResults.length > 1 ? 'Analyze More Videos' : 'Analyze Another Video'}
                     </button>
-                    <button className="btn btn-secondary" onClick={handleDownloadReport}>
+                    {/* Download Report button hidden but functionality preserved */}
+                    {/* <button className="btn btn-secondary" onClick={handleDownloadReport}>
                       {processingResults.length > 1 ? 'Download All Reports' : 'Download Report'}
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               ) : (
