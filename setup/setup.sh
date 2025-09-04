@@ -74,24 +74,29 @@ fi
 
 echo
 echo "📁 Creando directorios necesarios..."
-mkdir -p ../temp/uploads
-mkdir -p ../temp/frames
-mkdir -p ../temp/crops
+mkdir -p ../backend/storage/uploads
+mkdir -p ../backend/storage/frames
+mkdir -p ../backend/storage/crops
+mkdir -p ../backend/models/weights
 
 echo
 echo "🎯 Verificando modelo YOLO..."
 echo "Directorio actual: $(pwd)"
-echo "Buscando modelo en: $(pwd)/../best.pt"
-if [ -f "../best.pt" ]; then
-    echo "✅ Modelo YOLO encontrado: best.pt"
+echo "Buscando modelo en: $(pwd)/../backend/models/weights/best.pt"
+if [ -f "../backend/models/weights/best.pt" ]; then
+    echo "✅ Modelo YOLO encontrado: backend/models/weights/best.pt"
+elif [ -f "../best.pt" ]; then
+    echo "📦 Encontrado modelo en ubicación antigua, copiando..."
+    cp ../best.pt ../backend/models/weights/best.pt
+    echo "✅ Modelo copiado a nueva ubicación"
 else
-    echo "⚠️  Modelo YOLO no encontrado: best.pt"
-    echo "   Ubicación esperada: $(pwd)/../best.pt"
+    echo "⚠️  Modelo YOLO no encontrado en nueva ubicación"
+    echo "   Ubicación esperada: $(pwd)/../backend/models/weights/best.pt"
     echo "   El sistema usará yolov8n.pt como fallback"
     echo
     echo "📝 NOTA IMPORTANTE:"
-    echo "   Si no tienes el modelo best.pt personalizado,"
-    echo "   el sistema funcionará con el modelo por defecto YOLOv8n"
+    echo "   Si tienes el modelo best.pt, cópialo a:"
+    echo "   backend/models/weights/best.pt"
 fi
 
 echo
@@ -102,7 +107,7 @@ echo
 echo "Próximos pasos:"
 echo "1. Edita el archivo .env con tus credenciales de Supabase"
 echo "2. Asegúrate de tener el modelo best.pt (opcional)"
-echo "3. Ejecuta: setup/run.sh o python main.py"
+echo "3. Ejecuta: setup/run.sh o python backend/main.py"
 echo
 echo "Para activar el entorno manualmente:"
 echo "   source ../venv/bin/activate"

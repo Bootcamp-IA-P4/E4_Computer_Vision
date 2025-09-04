@@ -6,11 +6,11 @@ import cv2
 import logging
 from typing import Dict
 
-from backend.database.supabase_client import supabase_client
-from backend.models.yolo_processor import yolo_processor
-from backend.core.video_processor import video_processor
-from backend.core.stats_calculator import stats_calculator
-from backend.core.config import (
+from database.supabase_client import supabase_client
+from models.yolo_processor import yolo_processor
+from core.video_processor import video_processor
+from core.stats_calculator import stats_calculator
+from core.config import (
     FRAMES_DIR, CROPS_DIR, SUPPORTED_VIDEO_FORMATS, SUPPORTED_IMAGE_FORMATS,
     TARGET_FPS, SUPABASE_IMAGES_BUCKET, SUPABASE_VIDEOS_BUCKET
 )

@@ -8,14 +8,14 @@ import logging
 from typing import List, Optional
 import uuid
 
-# Local imports
-from backend.database.supabase_client import supabase_client
-from backend.models.yolo_processor import yolo_processor
-from backend.core.processing_service import processing_service
-from backend.core.video_processor import video_processor
-from backend.core.stats_calculator import stats_calculator
-from backend.api.endpoints import router as api_router
-from backend.core.config import (
+# Local imports - Updated for backend structure
+from database.supabase_client import supabase_client
+from models.yolo_processor import yolo_processor
+from core.processing_service import processing_service
+from core.video_processor import video_processor
+from core.stats_calculator import stats_calculator
+from api.endpoints import router as api_router
+from core.config import (
     UPLOAD_DIR, FRAMES_DIR, CROPS_DIR, 
     SUPPORTED_VIDEO_FORMATS, SUPPORTED_IMAGE_FORMATS,
     MAX_FILE_SIZE, TARGET_FPS, SUPABASE_IMAGES_BUCKET, SUPABASE_VIDEOS_BUCKET

@@ -103,25 +103,33 @@ if not exist ..\.env (
 
 echo.
 echo 📁 Creando directorios necesarios...
-if not exist ..\temp mkdir ..\temp
-if not exist ..\temp\uploads mkdir ..\temp\uploads
-if not exist ..\temp\frames mkdir ..\temp\frames
-if not exist ..\temp\crops mkdir ..\temp\crops
+if not exist ..\backend\storage mkdir ..\backend\storage
+if not exist ..\backend\storage\uploads mkdir ..\backend\storage\uploads
+if not exist ..\backend\storage\frames mkdir ..\backend\storage\frames
+if not exist ..\backend\storage\crops mkdir ..\backend\storage\crops
+if not exist ..\backend\models mkdir ..\backend\models
+if not exist ..\backend\models\weights mkdir ..\backend\models\weights
 
 echo.
 echo 🎯 Verificando modelo YOLO...
 echo Directorio actual: %CD%
-echo Buscando modelo en: %CD%\..\best.pt
-if exist ..\best.pt (
-    echo ✅ Modelo YOLO encontrado: best.pt
+echo Buscando modelo en: %CD%\..\backend\models\weights\best.pt
+if exist ..\backend\models\weights\best.pt (
+    echo ✅ Modelo YOLO encontrado: backend\models\weights\best.pt
 ) else (
-    echo ⚠️  Modelo YOLO no encontrado: best.pt
-    echo    Ubicación esperada: %CD%\..\best.pt
-    echo    El sistema usará yolov8n.pt como fallback
-    echo.
-    echo 📝 NOTA IMPORTANTE:
-    echo    Si no tienes el modelo best.pt personalizado,
-    echo    el sistema funcionará con el modelo por defecto YOLOv8n
+    echo ⚠️  Modelo YOLO no encontrado en nueva ubicación
+    echo    Ubicación esperada: %CD%\..\backend\models\weights\best.pt
+    if exist ..\best.pt (
+        echo 📦 Encontrado modelo en ubicación antigua, copiando...
+        copy ..\best.pt ..\backend\models\weights\best.pt
+        echo ✅ Modelo copiado a nueva ubicación
+    ) else (
+        echo    El sistema usará yolov8n.pt como fallback
+        echo.
+        echo 📝 NOTA IMPORTANTE:
+        echo    Si tienes el modelo best.pt, cópialo a:
+        echo    backend\models\weights\best.pt
+    )
 )
 
 echo.
@@ -132,7 +140,7 @@ echo.
 echo Próximos pasos:
 echo 1. Edita el archivo .env con tus credenciales de Supabase
 echo 2. Asegúrate de tener el modelo best.pt (opcional)
-echo 3. Ejecuta: setup\run.bat o python main.py
+echo 3. Ejecuta: setup\run.bat o python backend\main.py
 echo.
 echo Para activar el entorno manualmente:
 echo   ..\venv\Scripts\activate.bat

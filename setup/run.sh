@@ -53,12 +53,12 @@ fi
 echo "✅ FastAPI encontrado"
 
 echo "� Verificando modelo best.pt..."
-if [ ! -f "../best.pt" ]; then
-    echo "❌ Modelo best.pt no encontrado en directorio principal"
-    echo "   Ubicación esperada: ../best.pt"
+if [ ! -f "../backend/models/weights/best.pt" ]; then
+    echo "❌ Modelo best.pt no encontrado en backend/models/weights/"
+    echo "   Ubicación esperada: backend/models/weights/best.pt"
     echo "   Directorio actual: $(pwd)"
-    echo "   Contenido del directorio padre:"
-    ls -la ../ | grep -E '\.(pt|pth)$' || echo "   No se encontraron archivos de modelo (.pt/.pth)"
+    echo "   Contenido del directorio backend/models/weights/:"
+    ls -la ../backend/models/weights/ 2>/dev/null || echo "   Directorio no existe"
     exit 1
 fi
 
@@ -72,4 +72,4 @@ echo "Presiona Ctrl+C para detener el servidor"
 echo
 
 cd ..
-python main.py
+python backend/main.py

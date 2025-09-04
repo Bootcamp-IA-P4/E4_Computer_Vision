@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from backend.core.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE
+from core.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE
 import logging
 
 logger = logging.getLogger(__name__)

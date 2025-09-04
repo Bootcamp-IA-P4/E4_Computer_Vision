@@ -56,7 +56,18 @@ if %errorlevel% neq 0 (
 
 echo ✅ FastAPI encontrado
 
-echo 🚀 Iniciando servidor...
+echo � Verificando modelo best.pt...
+if not exist ..\backend\models\weights\best.pt (
+    echo ❌ Modelo best.pt no encontrado en backend/models/weights/
+    echo    Ubicación esperada: backend\models\weights\best.pt
+    echo    Verifica que el modelo esté en la ubicación correcta
+    pause
+    exit /b 1
+)
+
+echo ✅ Modelo best.pt encontrado
+
+echo �🚀 Iniciando servidor...
 echo.
 echo Servidor disponible en: http://localhost:8001
 echo Documentación API: http://localhost:8001/docs
@@ -65,4 +76,4 @@ echo Presiona Ctrl+C para detener el servidor
 echo.
 
 cd ..
-python main.py
+python backend/main.py

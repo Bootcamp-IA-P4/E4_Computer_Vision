@@ -1,0 +1,22 @@
+# Core Dependencies - Versiones optimizadas
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# AI/ML Dependencies - Versiones ligeras y estables
+opencv-python-headless==4.8.1.78
+ultralytics==8.0.196
+torch==2.1.0
+torchvision==0.16.0
+Pillow==10.0.1
+
+# Database - Versión estable
+supabase==2.0.0
+
+# Utilities - Solo lo esencial
+aiofiles==23.2.1
+httpx>=0.24.0,<0.25.0
+requests==2.31.0
+PyYAML==6.0.1
+numpy==1.24.3

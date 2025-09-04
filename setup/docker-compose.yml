@@ -1,18 +1,25 @@
-version: '3.8'
-
 services:
   logo-detection-api:
-    build: .
+    build: 
+      context: ..
+      dockerfile: setup/Dockerfile
     ports:
       - "8001:8001"
     environment:
       - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
       - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
-      - SUPABASE_IMAGES_BUCKET=${SUPABASE_IMAGES_BUCKET}
-      - SUPABASE_VIDEOS_BUCKET=${SUPABASE_VIDEOS_BUCKET}
+      - SUPABASE_IMAGES_BUCKET=${SUPABASE_IMAGES_BUCKET:-images}
+      - SUPABASE_VIDEOS_BUCKET=${SUPABASE_VIDEOS_BUCKET:-videos}
+      - PYTHONPATH=/app
+      - BACKEND_DIR=/app/backend
     volumes:
-      - ./temp:/app/temp
-      - ./best.pt:/app/best.pt:ro
+      # Persistir archivos de storage
+      - logo_storage_uploads:/app/backend/storage/uploads
+      - logo_storage_frames:/app/backend/storage/frames
+      - logo_storage_crops:/app/backend/storage/crops
+      # Logs
+      - logo_logs:/app/logs
     env_file:
       - .env
     restart: unless-stopped
@@ -21,3 +28,69 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+    networks:
+      - logo-network
+
+  # Versión headless (más ligera, sin GUI)
+  logo-detection-api-headless:
+    build: 
+      context: ..
+      dockerfile: setup/Dockerfile.headless
+    ports:
+      - "8001:8001"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_ROLE=${SUPABASE_SERVICE_ROLE}
+      - SUPABASE_IMAGES_BUCKET=${SUPABASE_IMAGES_BUCKET:-images}
+      - SUPABASE_VIDEOS_BUCKET=${SUPABASE_VIDEOS_BUCKET:-videos}
+      - PYTHONPATH=/app
+      - BACKEND_DIR=/app/backend
+    volumes:
+      # Persistir archivos de storage
+      - logo_storage_uploads:/app/backend/storage/uploads
+      - logo_storage_frames:/app/backend/storage/frames
+      - logo_storage_crops:/app/backend/storage/crops
+      # Logs
+      - logo_logs:/app/logs
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - logo-network
+    profiles:
+      - "headless"
+
+  # Opcional: Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ./ssl:/etc/nginx/ssl:ro  # Para HTTPS
+    depends_on:
+      - logo-detection-api
+    restart: unless-stopped
+    networks:
+      - logo-network
+    profiles:
+      - "with-nginx"
+
+volumes:
+  logo_storage_uploads:
+  logo_storage_frames:
+  logo_storage_crops:
+  logo_logs:
+
+networks:
+  logo-network:
+    driver: bridge
