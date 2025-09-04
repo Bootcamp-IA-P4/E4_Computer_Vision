@@ -20,6 +20,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el backend y main.py
 COPY backend ./backend
 COPY main.py .
+COPY backend/best.pt .
+
 # Crear directorios necesarios (aunque también se crean en el código)
 RUN mkdir -p temp/uploads temp/frames temp/crops
 
