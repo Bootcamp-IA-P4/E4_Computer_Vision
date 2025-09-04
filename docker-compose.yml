@@ -2,18 +2,13 @@ version: "3.9"
 
 services:
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: merkandez/backend:2.0
     container_name: backend_container
     ports:
       - "8001:8001"
-    env_file:
-      - ./backend/.env
-
 
   frontend:
-    build: ./front
+    image: merkandez/frontend:2.0
     container_name: frontend_container
     ports:
       - "3000:80"
