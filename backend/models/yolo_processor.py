@@ -5,7 +5,7 @@ import torch
 import os
 from typing import List, Dict, Tuple
 import logging
-from backend.core.config import MODEL_PATH, CONFIDENCE_THRESHOLD
+from core.config import MODEL_PATH, CONFIDENCE_THRESHOLD
 
 logger = logging.getLogger(__name__)
 

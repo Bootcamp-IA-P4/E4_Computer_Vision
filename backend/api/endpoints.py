@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database.supabase_client import supabase_client
+from database.supabase_client import supabase_client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ async def get_all_detections():
         response = supabase_client.client.table('detections')\
             .select('''
                 *,
-                brands(name),
+                brands!inner(name),
                 frame_captures(public_url, path, frame_number)
             ''')\
             .order('created_at', desc=True)\
@@ -51,7 +51,7 @@ async def get_detections(file_id: int):
         response = supabase_client.client.table('detections')\
             .select('''
                 *,
-                brands(name),
+                brands!inner(name),
                 frame_captures(public_url, path, frame_number)
             ''')\
             .eq('file_id', file_id)\
