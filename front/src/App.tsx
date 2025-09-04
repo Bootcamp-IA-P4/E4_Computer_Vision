@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import VideoUpload from './components/VideoUpload/VideoUpload';
+import MediaUpload from './components/MediaUpload/MediaUpload';
 import LogoSelector from './components/LogoSelector/LogoSelector';
 import ProgressBar from './components/UI/ProgressBar/ProgressBar';
 import ProcessingStatus from './components/ProcessingStatus/ProcessingStatus';
 import ResultsDisplay from './components/ResultsDisplay/ResultsDisplay';
-import { VideoFile, Logo } from './types';
+import { MediaFile, Logo } from './types';
 import { ProcessingResult, apiService } from './services/api';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<'upload' | 'select' | 'process' | 'results'>('upload');
-  const [selectedVideos, setSelectedVideos] = useState<VideoFile[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<MediaFile[]>([]);
   const [selectedLogos, setSelectedLogos] = useState<Logo[]>([]);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -51,8 +51,8 @@ function App() {
     }
   }, [processingResults, selectedLogos]);
 
-  const handleVideoUpload = (videos: VideoFile[]) => {
-    setSelectedVideos(videos);
+  const handleMediaUpload = (media: MediaFile[]) => {
+    setSelectedMedia(media);
     setCurrentStep('select');
   };
 
@@ -64,17 +64,17 @@ function App() {
     setCurrentStep('process');
     
     // Start processing all uploaded videos
-    const uploadedVideos = selectedVideos.filter(video => video.status === 'uploaded' && video.sessionId);
+    const uploadedMedia = selectedMedia.filter(media => media.status === 'uploaded' && media.sessionId);
     
-    if (uploadedVideos.length === 0) {
+    if (uploadedMedia.length === 0) {
       setProcessingError('No uploaded videos found for processing');
       return;
     }
 
-    console.log(`🚀 Starting processing for ${uploadedVideos.length} videos`);
+    console.log(`🚀 Starting processing for ${uploadedMedia.length} videos`);
     
     // Start processing the first video
-    const firstVideo = uploadedVideos[0];
+    const firstVideo = uploadedMedia[0];
     if (!firstVideo.sessionId) {
       setProcessingError('No session ID found for first video');
       return;
@@ -114,14 +114,14 @@ function App() {
     // Use setTimeout to ensure state update is processed before checking next video
     setTimeout(() => {
       // Check if there are more videos to process
-      const uploadedVideos = selectedVideos.filter(video => video.status === 'uploaded' && video.sessionId);
+      const uploadedMedia = selectedMedia.filter(media => media.status === 'uploaded' && media.sessionId);
       const nextIndex = currentProcessingIndex + 1;
       
-      console.log(`🎯 App: Processing status - currentIndex: ${currentProcessingIndex}, nextIndex: ${nextIndex}, totalVideos: ${uploadedVideos.length}`);
+      console.log(`🎯 App: Processing status - currentIndex: ${currentProcessingIndex}, nextIndex: ${nextIndex}, totalVideos: ${uploadedMedia.length}`);
       
-      if (nextIndex < uploadedVideos.length) {
+      if (nextIndex < uploadedMedia.length) {
         // Process next video
-        const nextVideo = uploadedVideos[nextIndex];
+        const nextVideo = uploadedMedia[nextIndex];
         if (!nextVideo.sessionId) {
           console.error('❌ No session ID found for next video');
           setProcessingError('No session ID found for next video');
@@ -134,7 +134,7 @@ function App() {
         setCurrentProcessingIndex(nextIndex);
         
         try {
-          console.log(`🚀 Starting processing for next video (${nextIndex + 1}/${uploadedVideos.length}):`, nextVideo.sessionId);
+          console.log(`🚀 Starting processing for next video (${nextIndex + 1}/${uploadedMedia.length}):`, nextVideo.sessionId);
           apiService.startProcessing(nextVideo.sessionId).then(() => {
             console.log('✅ Processing started for next video');
           }).catch((error) => {
@@ -177,7 +177,7 @@ function App() {
 
   const resetApp = () => {
     setCurrentStep('upload');
-    setSelectedVideos([]);
+    setSelectedMedia([]);
     setSelectedLogos([]);
     setProcessingProgress(0);
     setCurrentSessionId(null);
@@ -254,12 +254,12 @@ function App() {
             <div className="step-section">
               <div className="step-header">
                 <div className="step-number">1</div>
-                <h2>Video Upload</h2>
+                <h2>Media Upload</h2>
                 <p className="step-description italic-text">
-                  Upload a video file to analyze logos
+                  Upload video or image files to analyze logos
                 </p>
               </div>
-              <VideoUpload onVideoUpload={handleVideoUpload} />
+              <MediaUpload onMediaUpload={handleMediaUpload} />
             </div>
           </div>
         )}
@@ -289,12 +289,12 @@ function App() {
             <div className="step-section">
               <div className="step-header">
                 <div className="step-number">3</div>
-                <h2>Processing Video</h2>
+                <h2>Processing Media</h2>
                 <p className="step-description">
-                  AI is analyzing your video{selectedVideos.length > 1 ? 's' : ''} for logo detection
-                  {selectedVideos.length > 1 && (
+                  AI is analyzing your media file{selectedMedia.length > 1 ? 's' : ''} for logo detection
+                  {selectedMedia.length > 1 && (
                     <span className="processing-progress">
-                      (Video {currentProcessingIndex + 1} of {selectedVideos.filter(v => v.status === 'uploaded').length})
+                      (File {currentProcessingIndex + 1} of {selectedMedia.filter(v => v.status === 'uploaded').length})
                     </span>
                   )}
                 </p>
@@ -339,7 +339,7 @@ function App() {
                 <div className="results-container">
                   {processingResults.map((result, index) => (
                     <div key={result.file_id || index} className="video-result">
-                      <h3>Video {index + 1} Results</h3>
+                      <h3>{index + 1} Results</h3>
                       <ResultsDisplay 
                         result={result} 
                         selectedLogos={selectedLogos} 

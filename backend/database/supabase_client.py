@@ -79,9 +79,10 @@ class SupabaseClient:
             response = self.client.table('frame_captures').insert(frame_capture_data).execute()
             return response.data[0]['id']
         except Exception as e:
-            logger.warning(f"Frame capture insertion failed (table may not exist): {e}")
-            # Return a mock ID so processing can continue
-            return 0
+            logger.error(f"Frame capture insertion failed: {e}")
+            logger.error(f"Frame capture data that failed: {frame_capture_data}")
+            # Return None instead of 0 to indicate failure
+            return None
 
 # Global instance
 supabase_client = SupabaseClient()

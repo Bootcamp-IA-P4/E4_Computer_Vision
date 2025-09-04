@@ -448,7 +448,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         {/* Video Analysis - Full Width */}
         <div className="analysis-card">
           <h3 className="card-title universal-header">
-            Video Analysis
+            Analysis
           </h3>
           
       {(result.video_url || result.image_url) && (
@@ -587,34 +587,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         </div>
       )}
 
-      {/* Individual Detections */}
-      {result.detections && result.detections.length > 0 && (
-        <div className="detections-section">
-          <h3>🔍 Individual Detections</h3>
-          <div className="detections-grid">
-            {result.detections.map((detection, index) => (
-              <div key={index} className="detection-card">
-                <div className="detection-header">
-                  <span className="detection-brand">{detection.class_name}</span>
-                  <span className="detection-confidence">
-                    {formatConfidence(detection.confidence)}
-                  </span>
-                </div>
-                <div className="detection-details">
-                  <div className="detection-bbox">
-                    <span>Position: [{detection.bbox.map(b => Math.round(b)).join(', ')}]</span>
-                  </div>
-                  {detection.frame_number !== undefined && (
-                    <div className="detection-frame">
-                      <span>Frame: {detection.frame_number}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Frame Captures Section */}
       {detections.length > 0 && (
@@ -757,7 +729,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, selectedLogos =
         </div>
       )}
 
-      {/* Temporal Analytics Section */}
+      {/* Temporal and Comparative Analytics Section */}
       {detections.length > 0 && (
         <TemporalAnalytics 
           detections={detections}

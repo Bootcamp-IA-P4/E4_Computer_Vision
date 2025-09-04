@@ -1,5 +1,5 @@
-// Типы для видео файлов
-export interface VideoFile {
+// Типы для медиа файлов (видео и изображения)
+export interface MediaFile {
   id: string;
   name: string;
   size: number;
@@ -9,6 +9,12 @@ export interface VideoFile {
   progress?: number;
   error?: string;
   sessionId?: string;
+  fileType: 'video' | 'image'; // Добавляем тип файла
+}
+
+// Оставляем VideoFile для обратной совместимости
+export interface VideoFile extends MediaFile {
+  fileType: 'video';
 }
 
 // Типы для логотипов

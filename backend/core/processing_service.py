@@ -121,9 +121,12 @@ class ProcessingService:
                         't_start': t_start,
                         't_end': t_end,
                         'frame': frame_idx,
-                        'model': 'yolov8',
-                        'frame_capture_id': frame_capture_id
+                        'model': 'yolov8'
                     }
+                    
+                    # Only add frame_capture_id if it's not None
+                    if frame_capture_id is not None:
+                        detection_data['frame_capture_id'] = frame_capture_id
                     
                     # Insert detection
                     detection_id = await supabase_client.insert_detection(detection_data)
@@ -214,8 +217,11 @@ class ProcessingService:
                 frame_capture_data = {
                     'file_id': file_id,
                     'frame_number': 0,  # Single image, frame 0
-                    'timestamp_seconds': 0.0,
-                    'frame_url': frame_url,
+                    'bucket': SUPABASE_IMAGES_BUCKET,
+                    'path': frame_storage_path,
+                    'public_url': frame_url,
+                    't_start': 0.0,
+                    't_end': 0.0,
                     'detections_count': len(detections)
                 }
                 frame_capture_id = await supabase_client.insert_frame_capture(frame_capture_data)
@@ -247,9 +253,12 @@ class ProcessingService:
                     'score': detection['confidence'],
                     'bbox': detection['bbox'],
                     'frame': 0,
-                    'model': 'yolov8',
-                    'frame_capture_id': frame_capture_id
+                    'model': 'yolov8'
                 }
+                
+                # Only add frame_capture_id if it's not None
+                if frame_capture_id is not None:
+                    detection_data['frame_capture_id'] = frame_capture_id
                 
                 # Insert detection
                 detection_id = await supabase_client.insert_detection(detection_data)

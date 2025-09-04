@@ -1,23 +1,27 @@
 import React, { useState, useCallback } from 'react';
-import './VideoUpload.css';
-import { VideoFile } from '../../types';
+import './MediaUpload.css';
+import { MediaFile } from '../../types';
 import { apiService } from '../../services/api';
 
-interface VideoUploadProps {
-  onVideoUpload: (videos: VideoFile[]) => void;
+interface MediaUploadProps {
+  onMediaUpload: (files: MediaFile[]) => void;
 }
 
-const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
+const MediaUpload: React.FC<MediaUploadProps> = ({ onMediaUpload }) => {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<VideoFile[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<MediaFile[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const validateFile = (file: File): string | null => {
-    const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/mkv', 'video/webm'];
+    // Поддерживаемые форматы видео и изображений
+    const validVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/mkv', 'video/webm'];
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp'];
+    const validTypes = [...validVideoTypes, ...validImageTypes];
+    
     const maxSize = 100 * 1024 * 1024; // 100MB
 
     if (!validTypes.includes(file.type)) {
-      return 'Please select a valid video file (MP4, AVI, MOV, MKV, WebM)';
+      return 'Please select a valid video or image file (MP4, AVI, MOV, MKV, WebM, JPG, PNG, BMP)';
     }
 
     if (file.size > maxSize) {
@@ -25,6 +29,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     }
 
     return null;
+  };
+
+  const getFileType = (file: File): 'video' | 'image' => {
+    return file.type.startsWith('video/') ? 'video' : 'image';
   };
 
   const handleFile = useCallback(async (file: File) => {
@@ -37,7 +45,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     setError(null);
     const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    const videoFile: VideoFile = {
+    const mediaFile: MediaFile = {
       id: fileId,
       name: file.name,
       size: file.size,
@@ -45,13 +53,13 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
       url: URL.createObjectURL(file),
       status: 'uploading',
       progress: 0,
-      fileType: 'video'
+      fileType: getFileType(file)
     };
 
-    setUploadedFiles(prev => [...prev, videoFile]);
+    setUploadedFiles(prev => [...prev, mediaFile]);
 
     try {
-      console.log('🚀 Starting upload for file:', fileId, file.name);
+      console.log('🚀 Starting upload for file:', fileId, file.name, 'Type:', mediaFile.fileType);
       // Upload file to backend with progress tracking
       const response = await apiService.uploadFile(file, (progress) => {
         console.log('📊 Upload progress:', progress + '%');
@@ -81,7 +89,6 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
       );
       
       console.log('✅ File status updated to uploaded:', fileId);
-
       console.log('✅ File uploaded successfully:', response);
     } catch (error) {
       console.error('❌ Upload failed:', error);
@@ -142,13 +149,13 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
   }, []);
 
   const handleContinue = useCallback(() => {
-    console.log('🔍 Current uploaded files:', uploadedFiles.map(f => ({ id: f.id, name: f.name, status: f.status })));
+    console.log('🔍 Current uploaded files:', uploadedFiles.map(f => ({ id: f.id, name: f.name, status: f.status, fileType: f.fileType })));
     const validFiles = uploadedFiles.filter(f => f.status === 'uploaded' || f.status === 'processing');
-    console.log('✅ Valid files for continue:', validFiles.map(f => ({ id: f.id, name: f.name, status: f.status })));
+    console.log('✅ Valid files for continue:', validFiles.map(f => ({ id: f.id, name: f.name, status: f.status, fileType: f.fileType })));
     if (validFiles.length > 0) {
-      onVideoUpload(validFiles);
+      onMediaUpload(validFiles);
     }
-  }, [uploadedFiles, onVideoUpload]);
+  }, [uploadedFiles, onMediaUpload]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -158,8 +165,12 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const getFileIcon = (fileType: 'video' | 'image'): string => {
+    return fileType === 'video' ? '🎬' : '🖼️';
+  };
+
   return (
-    <div className="video-upload">
+    <div className="media-upload">
       <div className="upload-container">
         <div 
           className={`upload-area ${isDragOver ? 'drag-over' : ''}`}
@@ -170,10 +181,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
           <div className="upload-content">
             <div className="upload-button-container">
               <label className="upload-button">
-                <span className="button-text">Select Files</span>
+                <span className="button-text">Select Media Files</span>
                 <input
                   type="file"
-                  accept="video/*"
+                  accept="video/*,image/*"
                   multiple
                   onChange={handleFileInput}
                   style={{ display: 'none' }}
@@ -182,7 +193,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
             </div>
             
             <div className="upload-info">
-              <p className="formats-text">Supported formats: MP4, AVI, MOV, MKV, WebM</p>
+              <p className="formats-text">Supported formats: MP4, AVI, MOV, MKV, WebM, JPG, PNG, BMP</p>
               <p className="size-limit">Maximum size: 100MB per file</p>
               <p className="drag-drop-hint">Drag and drop multiple files here</p>
             </div>
@@ -204,7 +215,10 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
               {uploadedFiles.map(file => (
                 <div key={file.id} className={`file-card ${file.status}`}>
                   <div className="file-header">
-                    <div className="file-name">{file.name}</div>
+                    <div className="file-name">
+                      <span className="file-icon">{getFileIcon(file.fileType)}</span>
+                      {file.name}
+                    </div>
                     <button 
                       className="remove-file-btn"
                       onClick={() => removeFile(file.id)}
@@ -216,7 +230,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
                   
                   <div className="file-info">
                     <span className="file-size">{formatFileSize(file.size)}</span>
-                    <span className="file-type">{file.type.split('/')[1].toUpperCase()}</span>
+                    <span className="file-type">{file.fileType.toUpperCase()}</span>
                   </div>
                   
                   {file.status === 'uploading' && (
@@ -259,4 +273,4 @@ const VideoUpload: React.FC<VideoUploadProps> = ({ onVideoUpload }) => {
   );
 };
 
-export default VideoUpload;
+export default MediaUpload;

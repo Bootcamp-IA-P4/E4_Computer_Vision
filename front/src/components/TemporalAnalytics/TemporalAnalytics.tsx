@@ -188,7 +188,7 @@ const TemporalAnalytics: React.FC<TemporalAnalyticsProps> = ({
         className="temporal-analytics-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h3 className="universal-header">Temporal Analytics</h3>
+        <h3 className="universal-header">Temporal and Comparative Analytics (VIDEO Analysis Only)</h3>
         <div className="expand-icon">
           {isExpanded ? '▼' : '▶'}
         </div>
